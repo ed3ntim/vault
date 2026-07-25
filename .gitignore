@@ -7,6 +7,7 @@ tests/fuzz/coverage/
 **/*.rs.bk
 .DS_Store
 .claude/agent-memory-local/
+.claude/worktrees/
 app/build/
 app/.dart_tool/
 spikes/**/target/
