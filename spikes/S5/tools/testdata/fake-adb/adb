@@ -1,0 +1,82 @@
+#!/bin/sh
+# SYNTHETISCHER adb-Ersatz fuer den Trockenlauf der Messskripte.
+#
+# Zweck: Die Skripte in tools/collect/ lassen sich damit ohne Geraet auf
+# Ablauf und Parserfehler pruefen (tools/smoke-test.sh). Die ausgegebenen
+# Dumps sind nachgebaute Beispiele nach der AOSP-Ausgabe, KEINE Messdaten
+# eines echten Geraets.
+#
+# Verhalten steuerbar ueber Umgebungsvariablen:
+#   FAKE_LEVEL (Standard 95), FAKE_TEMP_DC (300), FAKE_PLUGGED (0),
+#   FAKE_SCREEN (false), FAKE_THERMAL (0), FAKE_UPTIME (3600)
+set -eu
+
+: "${FAKE_LEVEL:=95}"
+: "${FAKE_TEMP_DC:=300}"
+: "${FAKE_PLUGGED:=0}"
+: "${FAKE_SCREEN:=false}"
+: "${FAKE_THERMAL:=0}"
+: "${FAKE_UPTIME:=3600}"
+
+HERE=$(dirname "$0")
+
+# fuehrendes "-s <serial>" entfernen
+if [ "${1:-}" = "-s" ]; then shift 2; fi
+
+CMD="${1:-}"
+shift 2>/dev/null || true
+
+if [ "$CMD" = "get-state" ]; then echo device; exit 0; fi
+if [ "$CMD" = "bugreport" ]; then echo "FAKE-BUGREPORT" > "${1:-bugreport.zip}"; exit 0; fi
+if [ "$CMD" != "shell" ]; then echo "fake-adb: unbekanntes Kommando '$CMD'" >&2; exit 1; fi
+
+case "$*" in
+  "dumpsys battery")
+    if [ "$FAKE_PLUGGED" = "1" ]; then usb=true; else usb=false; fi
+    cat <<EOF
+Current Battery Service state:
+  AC powered: false
+  USB powered: $usb
+  Wireless powered: false
+  Max charging current: 0
+  status: 3
+  health: 2
+  present: true
+  level: $FAKE_LEVEL
+  scale: 100
+  voltage: 4180
+  temperature: $FAKE_TEMP_DC
+  technology: Li-ion
+  Charge counter: 3800000
+EOF
+    ;;
+  "dumpsys thermalservice")
+    cat <<EOF
+IsStatusOverride: false
+Thermal Status: $FAKE_THERMAL
+Current temperatures from HAL:
+	Temperature{mValue=29.6, mType=3, mName=VIRTUAL-SKIN, mStatus=$FAKE_THERMAL}
+EOF
+    ;;
+  "dumpsys deviceidle get screen") echo "$FAKE_SCREEN" ;;
+  "dumpsys deviceidle get deep")   echo "IDLE" ;;
+  "dumpsys deviceidle")            echo "  mState=IDLE" ;;
+  "dumpsys power")                 echo "  mWakefulness=Asleep" ;;
+  "cat /proc/uptime")              echo "$FAKE_UPTIME.42 12345.67" ;;
+  "settings get global low_power")                             echo 0 ;;
+  "settings get global airplane_mode_on")                      echo 0 ;;
+  "settings get global adaptive_battery_management_enabled")   echo 0 ;;
+  "settings get global auto_time")                             echo 1 ;;
+  "settings get global wifi_on")                               echo 1 ;;
+  "settings get global bluetooth_on")                          echo 0 ;;
+  "settings get secure location_mode")                         echo 0 ;;
+  "getprop ro.build.version.release") echo "13" ;;
+  "getprop ro.build.version.sdk")     echo "33" ;;
+  "getprop ro.build.id")              echo "SYNTHETIC.000000.000" ;;
+  "getprop ro.product.model")         echo "SYNTHETIC-MIDRANGE" ;;
+  "dumpsys batterystats --reset")     echo "Battery stats reset." ;;
+  "dumpsys batterystats --enable full-history") echo "Enabled: full-history" ;;
+  "dumpsys batterystats --history")   cat "$HERE/../synthetic-batterystats-history.txt" ;;
+  "dumpsys batterystats --checkin")   cat "$HERE/../synthetic-batterystats-checkin.txt" ;;
+  *) echo "fake-adb: nicht abgedeckt: $*" >&2; exit 1 ;;
+esac

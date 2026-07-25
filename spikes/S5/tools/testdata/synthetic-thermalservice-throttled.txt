@@ -1,0 +1,15 @@
+### SYNTHETISCH — kein echter Geraetedump.
+### Gegenprobe: Ein Lauf mit Throttling muss vom Werkzeug erkannt werden.
+### sample t_unix=1750000000
+Thermal Status: 0
+Current temperatures from HAL:
+	Temperature{mValue=38.9, mType=3, mName=VIRTUAL-SKIN, mStatus=0}
+### sample t_unix=1750003600
+Thermal Status: 1
+Current temperatures from HAL:
+	Temperature{mValue=43.2, mType=3, mName=VIRTUAL-SKIN, mStatus=1}
+### sample t_unix=1750007200
+Thermal Status: 2
+Current temperatures from HAL:
+	Temperature{mValue=46.5, mType=3, mName=VIRTUAL-SKIN, mStatus=2}
+	Temperature{mValue=51.0, mType=0, mName=CPU, mStatus=2}

@@ -1,0 +1,18 @@
+SYNTHETISCH — kein echter Geraetedump. Nachgebildet nach der Ausgabe von
+`adb shell dumpsys batterystats --history` (AOSP BatteryStats.HistoryPrinter).
+Zweck: Formatprobe fuer `s5-eval history`. Die Fuellstaende sind gerechnet,
+keine Messung.
+Battery History (4% used, 13KB used of 320KB, 96 strings using 9KB):
+0 (9) RESET:TIME: 2026-05-01-12-00-00
+  +1s241ms (2) 095 status=discharging health=good plug=none temp=280 volt=4331 -screen
+  +2h11m00s000ms (2) 094 temp=281 volt=4318
+  +4h22m00s000ms (2) 093 temp=280 volt=4306
+  +6h33m00s000ms (2) 092 temp=279 volt=4294
+  +8h44m00s000ms (2) 091 temp=280 volt=4282
+  +10h55m00s000ms (2) 090 temp=280 volt=4270
+  +13h06m00s000ms (2) 089 temp=281 volt=4258
+  +15h17m00s000ms (2) 088 temp=280 volt=4246
+  +17h28m00s000ms (2) 087 temp=280 volt=4234
+  +19h39m00s000ms (2) 086 temp=279 volt=4222
+  +21h50m00s000ms (2) 085 temp=280 volt=4210
+  +23h58m00s000ms (2) 084 temp=280 volt=4199

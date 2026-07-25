@@ -1,0 +1,21 @@
+[package]
+name = "s5-eval"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Auswertung der S5-Akkumessreihen (spec/phase0-spikeplan.md S5). Nur std, keine Dependencies."
+
+# Eigenstaendiges Werkzeug ausserhalb des core/-Workspaces (CLAUDE.md: Spike-Code
+# liegt ausschliesslich unter spikes/).
+[workspace]
+
+[lib]
+name = "s5_eval"
+path = "src/lib.rs"
+
+[[bin]]
+name = "s5-eval"
+path = "src/main.rs"
+
+[profile.release]
+panic = "abort"

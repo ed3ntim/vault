@@ -1,0 +1,30 @@
+### SYNTHETISCH — kein echter Geraetedump.
+### Nachgebildet nach der dokumentierten Ausgabe von
+### `adb shell dumpsys thermalservice` (AOSP, Android 10-14).
+### Zweck: Formatprobe fuer `s5-eval thermal`. Keine Messwerte.
+### sample t_unix=1750000000
+IsStatusOverride: false
+ThermalEventListeners:
+	callbacks: 2
+	killed: false
+Thermal Status: 0
+Cached temperatures:
+	Temperature{mValue=29.6, mType=3, mName=VIRTUAL-SKIN, mStatus=0}
+Current temperatures from HAL:
+	Temperature{mValue=29.6, mType=3, mName=VIRTUAL-SKIN, mStatus=0}
+	Temperature{mValue=31.2, mType=0, mName=CPU, mStatus=0}
+	Temperature{mValue=28.9, mType=2, mName=BATTERY, mStatus=0}
+Current cooling devices from HAL:
+	CoolingDevice{mValue=0, mType=0, mName=thermal-cpufreq-0}
+### sample t_unix=1750003600
+Thermal Status: 0
+Current temperatures from HAL:
+	Temperature{mValue=30.1, mType=3, mName=VIRTUAL-SKIN, mStatus=0}
+	Temperature{mValue=32.0, mType=0, mName=CPU, mStatus=0}
+	Temperature{mValue=29.4, mType=2, mName=BATTERY, mStatus=0}
+### sample t_unix=1750007200
+Thermal Status: 0
+Current temperatures from HAL:
+	Temperature{mValue=29.8, mType=3, mName=VIRTUAL-SKIN, mStatus=0}
+	Temperature{mValue=31.5, mType=0, mName=CPU, mStatus=0}
+	Temperature{mValue=29.1, mType=2, mName=BATTERY, mStatus=0}

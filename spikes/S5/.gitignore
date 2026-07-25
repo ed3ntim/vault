@@ -1,0 +1,8 @@
+# Build-Artefakte des Auswertewerkzeugs
+tools/s5-eval/target/
+
+# Messdaten aus echten Laeufen: bleiben lokal.
+# Bugreports enthalten Geraetekontext (Paketnamen, WLAN, Logs) und gehoeren
+# nicht ins Repository (CLAUDE.md; ADR-14).
+runs/
+*.zip
