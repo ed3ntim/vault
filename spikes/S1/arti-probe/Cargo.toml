@@ -1,0 +1,44 @@
+[package]
+name = "arti-probe"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Spike S1 — Tor-Stack: Arti vs. C-tor
+# Zweck: Pruefen, ob arti-client/tor-hsservice Onion-Services mit
+# v3 Client Authorization ("restricted discovery") produktionsreif
+# unterstuetzen. Kein Produktionscode. Siehe spec/phase0-spikeplan.md §2 S1.
+#
+# Hinweis: `experimental-api` ist hier NOTWENDIG, weil die client-seitige
+# Verwaltung der Client-Auth-Schluessel (insert/generate/rotate/remove
+# _service_discovery_key) in arti-client 0.44.0 hinter diesem Feature liegt.
+# Genau das ist eines der Messergebnisse des Spikes.
+
+[dependencies]
+arti-client = { version = "0.44.0", default-features = false, features = [
+    "tokio",
+    "native-tls",
+    "compression",
+    "onion-service-client",
+    "onion-service-service",
+    "keymgr",
+    "experimental-api",
+    "static-sqlite",
+] }
+tor-hsservice = { version = "0.44.0", features = ["restricted-discovery"] }
+tor-hscrypto = "0.44.0"
+tor-rtcompat = { version = "0.44.0", features = ["tokio", "native-tls"] }
+tor-keymgr = "0.44.0"
+tor-config-path = "0.44.0"
+tor-cell = "0.44.0"
+tor-llcrypto = "0.44.0"
+safelog = "0.9.0"
+rand = "0.10.1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "io-util"] }
+futures = "0.3"
+anyhow = "1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[[bin]]
+name = "bootstrap-timing"
+path = "src/bin/bootstrap_timing.rs"

@@ -1,0 +1,21 @@
+# Spike S1 — Arti 0.44.0 Onion-Service mit Client-Auth gegen das echte Tor-Netz
+# Plattform: windows
+# Connect-Laeufe: 1, Timeout je Phase: 90 s
+
+[2m2026-07-25T14:59:17.520465Z[0m [32m INFO[0m [2mtor_dirmgr[0m[2m:[0m Didn't get usable directory from cache.
+[2m2026-07-25T14:59:17.520900Z[0m [32m INFO[0m [2mtor_dirmgr::bootstrap[0m[2m:[0m 1: Looking for a consensus. [3mattempt[0m[2m=[0m1
+[2m2026-07-25T14:59:17.521908Z[0m [34mDEBUG[0m [2mtor_chanmgr::factory[0m[2m:[0m Attempting to open a new channel to [209.58.180.236:9001 ed25519:UUp9bep51Vqdl1vjAohvgf38RCNtTrpBFxfwyM1iZ3Y $0371e4ec901c4fc77fea2aa5be4218f0be1f6ce3]
+[2m2026-07-25T14:59:17.521976Z[0m [34mDEBUG[0m [2mtor_chanmgr::factory[0m[2m:[0m Attempting to open a new channel to [90.90.165.58:443 ed25519:dHvB4QylTthXZ2L4N5AAVFEgWj+QuwjKX+PDLXaQMNQ $0106dda8be86aaacf769d3e1d30867495e9f3e22]
+[2m2026-07-25T14:59:17.521908Z[0m [34mDEBUG[0m [2mtor_chanmgr::factory[0m[2m:[0m Attempting to open a new channel to [68.185.124.105:42069 ed25519:+MYsyJeY3UDVEzDMsBjhirh5doCHMCM9YaU9hX87LLs $acd05b04783ac9b868a07dcf945e49c5792679aa]
+[2m2026-07-25T14:59:17.528292Z[0m [34mDEBUG[0m [2mtor_chanmgr::transport::default[0m[2m:[0m Connecting to 90.90.165.58:443
+[2m2026-07-25T14:59:17.528309Z[0m [34mDEBUG[0m [2mtor_chanmgr::transport::default[0m[2m:[0m Connecting to 209.58.180.236:9001
+[2m2026-07-25T14:59:17.528382Z[0m [34mDEBUG[0m [2mtor_chanmgr::transport::default[0m[2m:[0m Connecting to 68.185.124.105:42069
+[2m2026-07-25T14:59:17.963129Z[0m [34mDEBUG[0m [2mtor_proto::client::channel::handshake[0m[2m:[0m starting Tor handshake with Direct([90.90.165.58:443]) [3mstream_id[0m[2m=[0mChan 0
+[2m2026-07-25T14:59:18.026251Z[0m [34mDEBUG[0m [2mtor_proto::channel::handshake[0m[2m:[0m Completed handshake with peer: [scrubbed] [3mstream_id[0m[2m=[0mChan 0
+[2m2026-07-25T14:59:18.099586Z[0m [34mDEBUG[0m [2mtor_proto::client::channel::handshake[0m[2m:[0m starting Tor handshake with Direct([68.185.124.105:42069]) [3mstream_id[0m[2m=[0mChan 1
+[2m2026-07-25T14:59:18.167642Z[0m [34mDEBUG[0m [2mtor_proto::client::channel::handshake[0m[2m:[0m starting Tor handshake with Direct([209.58.180.236:9001]) [3mstream_id[0m[2m=[0mChan 2
+[2m2026-07-25T14:59:18.488101Z[0m [34mDEBUG[0m [2mtor_proto::channel::handshake[0m[2m:[0m Completed handshake with peer: [scrubbed] [3mstream_id[0m[2m=[0mChan 1
+[2m2026-07-25T14:59:18.611097Z[0m [34mDEBUG[0m [2mtor_proto::channel::handshake[0m[2m:[0m Completed handshake with peer: [scrubbed] [3mstream_id[0m[2m=[0mChan 2
+[2m2026-07-25T15:00:19.162240Z[0m [34mDEBUG[0m [2mtor_proto::client::reactor::circuit[0m[2m:[0m Received DESTROY cell. Reason: Circuit expired for being too dirty or old [FINISHED] [3mcirc_id[0m[2m=[0mCirc 1.0 (Tunnel 2)
+[2m2026-07-25T15:00:19.779988Z[0m [34mDEBUG[0m [2mtor_proto::client::reactor::circuit[0m[2m:[0m Received DESTROY cell. Reason: Circuit expired for being too dirty or old [FINISHED] [3mcirc_id[0m[2m=[0mCirc 2.0 (Tunnel 3)
+[2m2026-07-25T15:00:21.563030Z[0m [34mDEBUG[0m [2mtor_proto::client::reactor::circuit[0m[2m:[0m Received DESTROY cell. Reason: Circuit expired for being too dirty or old [FINISHED] [3mcirc_id[0m[2m=[0mCirc 0.0 (Tunnel 1)

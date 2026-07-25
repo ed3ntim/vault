@@ -1,0 +1,36 @@
+[package]
+name = "api-nonexp"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Spike S1 — Belegt per Compilerlauf, welche Teile der Client-Auth-Funktionalitaet
+# in arti-client 0.44.0 OHNE das Feature `experimental-api` verfuegbar sind,
+# und ob der Stack fuer die Zielplattformen (ADR-12) uebersetzt.
+#
+#   cargo check                                  -> muss GELINGEN  (Service-Seite)
+#   cargo check --features client-key-api        -> muss SCHEITERN (Client-Seite)
+#   cargo check --target aarch64-linux-android \
+#       --no-default-features --features tls-rustls
+#
+# Alle Laeufe ohne `experimental-api`.
+
+[features]
+default = ["tls-native"]
+tls-native = ["arti-client/native-tls", "tor-rtcompat/native-tls"]
+tls-rustls = ["arti-client/rustls", "tor-rtcompat/rustls"]
+# Aktiviert Code, der die client-seitige Client-Auth-Schluesselverwaltung nutzt.
+client-key-api = []
+
+[dependencies]
+arti-client = { version = "0.44.0", default-features = false, features = [
+    "tokio",
+    "static-sqlite",
+    "onion-service-client",
+    "onion-service-service",
+    "keymgr",
+] }
+tor-hsservice = { version = "0.44.0", features = ["restricted-discovery"] }
+tor-hscrypto = "0.44.0"
+tor-keymgr = "0.44.0"
+tor-rtcompat = { version = "0.44.0", features = ["tokio"] }

@@ -1,0 +1,58 @@
+# Spike S1 — Descriptor Client-Auth (Restricted Discovery), offline
+# arti-Crates: tor-netdoc 0.44.0 / tor-hscrypto 0.44.0
+
+[T1] Descriptor mit Client-Auth gebaut
+     autorisierte Clients : 8
+     Intro-Points         : 3
+     Descriptor-Groesse   : 14427 Bytes
+
+[T2] autorisierte Entschluesselungsversuche: 8
+     erfolgreich: 8   gescheitert: 0
+     ERGEBNIS: PASS
+
+[T3] nicht-autorisierte Clients (frischer Key je Versuch): 500
+     abgewiesen: 500   durchgekommen: 0
+     Abweisungsquote: 100.0000 %
+     ERGEBNIS: PASS
+
+[T4] Abruf ohne Client-Key (HSDir-Beobachter/Enumerator): 500
+     abgewiesen: 500   durchgekommen: 0
+     ERGEBNIS: PASS
+
+[T5] Kontrolle: Descriptor OHNE Client-Auth, Abruf ohne Key
+     Groesse: 14427 Bytes   Ergebnis: lesbar (erwartet)
+     ERGEBNIS: PASS
+
+[T6] Fuer den HSDir sichtbare Struktur (aeusseres Dokument)
+     Schluesselwoerter mit Client-Auth : ["hs-descriptor", "descriptor-lifetime", "descriptor-signing-key-cert", "revision-counter", "superencrypted", "signature"]
+     Schluesselwoerter ohne Client-Auth: ["hs-descriptor", "descriptor-lifetime", "descriptor-signing-key-cert", "revision-counter", "superencrypted", "signature"]
+     Bytes mit / ohne Client-Auth: 14427 / 14427
+     Struktur unterscheidbar? nein (gleiche Keywords, gleiche Laenge)
+
+[T7] Descriptor-Groesse nach Anzahl autorisierter Clients (3 Intro-Points)
+     50-kB-Grenze = Konsensparameter HSV3MaxDescriptorSize
+     clients | bytes  | Status
+           1 |  14427 | ok
+           5 |  14427 | ok
+          10 |  14427 | ok
+          20 |  14427 | ok
+          50 |  14427 | ok
+          60 |  14427 | ok
+          70 |  14427 | ok
+          80 |  14427 | ok
+         100 |  28292 | ok
+         160 |  28292 | ok
+         200 |  28292 | ok
+         300 |  42157 | ok
+         350 |  42157 | ok
+         400 |  56027 | ueber 50 kB
+         500 |  56027 | ueber 50 kB
+     groesste getestete Clientzahl unter 50 kB: 350
+     Bibliotheks-Empfehlung MAX_RESTRICTED_DISCOVERY_CLIENTS: 160
+
+[T8] Client-Auth aktiv, aber 0 autorisierte Clients
+     Fehler beim Bauen: Internal error
+     Doku sagt (tor-netdoc build.rs, auth_clients): 'If Some(&[]), restricted discovery is enabled, but there will be no authorized clients'
+     tatsaechliches Verhalten: Fehler (Bug/BadApiUsage) — Doku und Code weichen ab
+
+== GESAMT: PASS ==

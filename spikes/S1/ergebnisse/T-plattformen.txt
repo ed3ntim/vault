@@ -1,0 +1,50 @@
+# Spike S1 — Plattform-Vorpruefung (Cross-Compile), Protokoll der tatsaechlich
+# ausgefuehrten Kommandos. Host: x86_64-pc-windows-msvc, rustc 1.97.1.
+
+## Installierte Rust-Targets nach `rustup target add aarch64-linux-android`
+aarch64-linux-android
+x86_64-pc-windows-msvc
+
+## Lauf 1
+cd spikes/S1/api-nonexp
+cargo check --target aarch64-linux-android
+-> FEHLGESCHLAGEN nach 48,2 s
+   Ursache: openssl-sys 0.9.117 (ueber native-tls) findet keine OpenSSL-
+   Installation fuer aarch64-linux-android.
+   Auszug: "Could not find directory of OpenSSL installation, and this `-sys`
+   crate cannot proceed without this knowledge."
+   Folgerung: native-tls ist fuer Android kein gangbarer Weg ohne
+   cross-kompiliertes OpenSSL.
+
+## Lauf 2
+cargo check --target aarch64-linux-android --no-default-features --features tls-rustls
+-> FEHLGESCHLAGEN nach 89,8 s
+   Ursache: cc-rs findet keinen C-Compiler fuer das Ziel.
+   Auszug: 'error occurred in cc-rs: failed to find tool "clang.exe": program
+   not found' bzw. 'failed to find tool "aarch64-linux-android-clang"'.
+   Folgerung: Es fehlt das Android NDK. Der Fehler ist umgebungsbedingt,
+   nicht arti-bedingt.
+
+## C-Abhaengigkeiten im arti-Abhaengigkeitsgraph (Feature-Satz des Spikes)
+cargo tree --prefix none | sort -u | grep -E "sys v|^cc v|liblzma|zstd|libsqlite"
+cc v1.4.0
+dirs-sys v0.5.0
+liblzma v0.4.7
+liblzma-sys v0.4.7
+libsqlite3-sys v0.37.0
+windows-sys v0.59.0
+windows-sys v0.60.2
+windows-sys v0.61.2
+zstd v0.13.3
+zstd-safe v7.2.4
+zstd-sys v2.0.16+zstd.1.5.7
+
+## Ist SQLite abwaehlbar?
+tor-dirmgr-0.44.0/Cargo.toml.orig Zeile 91:
+  rusqlite = { version = ">=0.36.0, <0.40.0", features = ["time"] }
+-> nicht optional. libsqlite3-sys ist im Graph unvermeidbar, solange
+   tor-dirmgr verwendet wird. `compression` (zstd/liblzma) waere abwaehlbar.
+
+## Umfang des Abhaengigkeitsgraphen (arti-probe, Feature-Satz des Spikes)
+cargo tree --prefix none | sort -u | wc -l  ->  414 Eintraege
+Binaergroesse release (Windows, inkl. Debug-Info): 15.386.112 Bytes

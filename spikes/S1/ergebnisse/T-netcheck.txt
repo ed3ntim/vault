@@ -1,0 +1,14 @@
+# Spike S1 — Erreichbarkeit des Tor-Netzes aus dieser Umgebung
+# TCP-Connect-Test gegen Tor-Directory-Authorities, Timeout 10s
+
+  moria1       128.31.0.39:9101       NICHT ERREICHBAR nach 2608 ms: Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte. (os error 10061) (ConnectionRefused)
+  tor26        86.59.21.38:443        NICHT ERREICHBAR nach 10012 ms: connection timed out (TimedOut)
+  dizum        45.66.35.11:443        ERREICHBAR (19 ms)
+  gabelmoo     131.188.40.189:443     ERREICHBAR (29 ms)
+  dannenberg   193.23.244.244:443     ERREICHBAR (19 ms)
+  maatuska     171.25.193.9:80        ERREICHBAR (36 ms)
+  longclaw     199.58.81.140:443      ERREICHBAR (101 ms)
+  bastet       204.13.164.118:443     ERREICHBAR (181 ms)
+
+erreichbar: 6 von 8
+Folgerung: Tor-Bootstrap grundsaetzlich moeglich -> Kriterium 2 messbar

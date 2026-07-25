@@ -1,0 +1,4 @@
+# Spike S1 — Arti 0.44.0 Onion-Service mit Client-Auth gegen das echte Tor-Netz
+# Plattform: windows
+# Connect-Laeufe: 12, Timeout je Phase: 240 s
+

@@ -1,0 +1,31 @@
+[package]
+name = "desc-auth"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Spike S1 — Tor-Stack: Arti vs. C-tor
+# Offline-Messung von Erfolgskriterium 3 der Spec
+# (spec/phase0-spikeplan.md §2 S1):
+#   "Nicht-autorisierter Descriptor-Abruf schlaegt in 100 % der Versuche fehl"
+#
+# Gemessen wird die kryptografische Schicht: ein v3-Onion-Descriptor wird mit
+# der Arti-Bibliothek (tor-netdoc 0.44.0) im Restricted-Discovery-Modus
+# ("v3 Client Authorization") gebaut und anschliessend mit autorisierten und
+# nicht-autorisierten Schluesseln zu entschluesseln versucht.
+# Kein Netzverkehr, keine Tor-Verbindung.
+
+[dependencies]
+tor-netdoc = { version = "0.44.0", features = ["hs-service", "hs-client"] }
+tor-hscrypto = "0.44.0"
+tor-llcrypto = "0.44.0"
+tor-linkspec = "0.44.0"
+tor-checkable = "0.44.0"
+tor-units = "0.44.0"
+tor-cell = "0.44.0"
+rand = "0.10.1"
+humantime = "2"
+
+[[bin]]
+name = "desc-auth"
+path = "src/main.rs"
