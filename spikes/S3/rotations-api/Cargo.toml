@@ -1,0 +1,39 @@
+[package]
+name = "rotations-api"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Spike S3 — Welche Hebel bietet die oeffentliche API von arti 0.44.0, um die
+# von ADR-15 geforderte Intro-Point-Rotation zu ERZWINGEN?
+#
+# Gemessen wird per Compilerlauf (wie spikes/S1/api-nonexp):
+#   cargo check                            -> Hebel L1 (reconfigure) vorhanden?
+#   cargo check --features probe-pause     -> Hebel L2 (pause/stop) vorhanden?
+#   cargo check --features probe-rotate    -> Hebel L3 (rotate_intro_points)?
+#   cargo check --features probe-confirm   -> Bestaetigung der Rotation ablesbar?
+#   cargo check --features probe-relaunch  -> Hebel L4 (Dienst neu starten)?
+#
+# Alles ohne `experimental-api`. Kein Netzverkehr, nur Uebersetzung.
+
+[features]
+default = []
+probe-pause = []
+probe-rotate = []
+probe-confirm = []
+probe-relaunch = []
+
+[dependencies]
+arti-client = { version = "0.44.0", default-features = false, features = [
+    "tokio",
+    "native-tls",
+    "static-sqlite",
+    "onion-service-client",
+    "onion-service-service",
+    "keymgr",
+] }
+tor-hsservice = { version = "0.44.0", features = ["restricted-discovery"] }
+tor-hscrypto = "0.44.0"
+tor-keymgr = "0.44.0"
+tor-config = "0.44.0"
+tor-rtcompat = { version = "0.44.0", features = ["tokio", "native-tls"] }

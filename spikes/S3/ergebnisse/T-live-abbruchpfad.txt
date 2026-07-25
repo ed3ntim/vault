@@ -1,0 +1,20 @@
+# Spike S3 — Kontrolllauf des Abbruchpfads im Messrig
+# Zweck: belegen, dass das Rig ohne Tor-Zugang von selbst terminiert.
+# Dies ist KEIN Latenzmesslauf.
+# Start: 2026-07-25T22:57:27Z
+# Argumente: ab 900 15 45 (Bootstrap-Timeout absichtlich kurz)
+
+# Spike S3 — Revocation-Latenz gegen das echte Tor-Netz
+# spec/phase0-spikeplan.md §3 (S3) · spec/protokoll-spec.md §11 · ADR-15
+# Plattform: windows
+# Variante(n): ab · Beobachtung 900 s · Sondenabstand 15 s · Bootstrap-Timeout 45 s
+# Bestaetigung eines Verlusts: 3 Fehlversuche in Folge
+
+[2m2026-07-25T22:57:27.894710Z[0m [32m INFO[0m [2mtor_memquota::mtracker[0m[2m:[0m Memory quota tracking initialised [3mmax[0m[2m=[0m8.00 GiB [3mlow_water[0m[2m=[0m6.00 GiB
+[2m2026-07-25T22:57:27.924478Z[0m [32m INFO[0m [2mtor_dirmgr[0m[2m:[0m Didn't get usable directory from cache.
+[2m2026-07-25T22:57:27.925095Z[0m [32m INFO[0m [2mtor_dirmgr::bootstrap[0m[2m:[0m 1: Looking for a consensus. [3mattempt[0m[2m=[0m1
+[B1] Bootstrap der Service-Seite nach 45 s nicht abgeschlossen — Abbruch.
+     Keine Messwerte. Dieser Lauf belegt nur die Umgebung.
+
+# Exitcode: 3
+# Ende: 2026-07-25T22:58:12Z

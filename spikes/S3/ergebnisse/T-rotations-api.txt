@@ -1,0 +1,67 @@
+# Spike S3 — Hebel fuer erzwungene Intro-Point-Rotation, arti 0.44.0
+# 2026-07-25T22:16:06Z
+# rustc: rustc 1.97.1 (8bab26f4f 2026-07-14)
+# ohne Feature experimental-api, kein Netzverkehr
+
+== L1 reconfigure (Clientliste verkleinern) (Erwartung: vorhanden) ==
+   uebersetzt (vorhanden) — Dauer 64 s
+   ERGEBNIS: VORHANDEN
+
+== L2 pause() (Dienst anhalten) (Erwartung: nicht vorhanden) ==
+error[E0599]: no method named `pause` found for reference `&RunningOnionService` in the current scope
+  --> src\lib.rs:53:9
+   |
+53 |     svc.pause();
+   |         ^^^^^ method not found in `&RunningOnionService`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `rotations-api` (lib) due to 1 previous error
+   uebersetzt NICHT — Dauer 1 s
+   ERGEBNIS: NICHT VORHANDEN
+
+== L3 rotate_intro_points() (Erwartung: nicht vorhanden) ==
+error[E0599]: no method named `rotate_intro_points` found for reference `&RunningOnionService` in the current scope
+  --> src\lib.rs:63:9
+   |
+63 |     svc.rotate_intro_points();
+   |         ^^^^^^^^^^^^^^^^^^^ method not found in `&RunningOnionService`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `rotations-api` (lib) due to 1 previous error
+   uebersetzt NICHT — Dauer 1 s
+   ERGEBNIS: NICHT VORHANDEN
+
+== L4 drop + launch_onion_service (Neustart) (Erwartung: vorhanden) ==
+   uebersetzt (vorhanden) — Dauer 2 s
+   ERGEBNIS: VORHANDEN
+
+== C1 Rotationsbestaetigung aus OnionServiceStatus (Erwartung: nicht vorhanden) ==
+error[E0599]: no method named `published_revision_counter` found for struct `OnionServiceStatus` in the current scope
+  --> src\lib.rs:95:18
+   |
+95 |     let rev = st.published_revision_counter();
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `OnionServiceStatus`
+
+error[E0599]: no method named `intro_points` found for struct `OnionServiceStatus` in the current scope
+  --> src\lib.rs:97:19
+   |
+97 |     let ipts = st.intro_points().len();
+   |                   ^^^^^^^^^^^^
+   |
+help: there is a method `try_into` with a similar name
+   |
+97 -     let ipts = st.intro_points().len();
+97 +     let ipts = st.try_into().len();
+   |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `rotations-api` (lib) due to 2 previous errors
+   uebersetzt NICHT — Dauer 1 s
+   ERGEBNIS: NICHT VORHANDEN
+
+== Zusammenfassung ==
+L1 reconfigure (Clientliste)          : VORHANDEN
+L2 pause()                            : NICHT VORHANDEN
+L3 rotate_intro_points()              : NICHT VORHANDEN
+L4 drop + relaunch                    : VORHANDEN
+C1 Rotation bestaetigbar (Status-API) : NICHT VORHANDEN

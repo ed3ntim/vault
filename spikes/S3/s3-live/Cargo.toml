@@ -1,0 +1,50 @@
+[package]
+name = "s3-live"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Spike S3 — Ende-zu-Ende-Messung der Revocation-Latenz gegen das echte Tor-Netz.
+#
+# Misst spec/phase0-spikeplan.md §3 (S3):
+#   "Revocation -> Verbindungsverlust des Revozierten in < 5 min (p95);
+#    Intro-Point-Rotation greift"
+#
+# Zwei Varianten:
+#   A) nur `reconfigure` (Clientliste verkleinern) — der Hebel, den die
+#      Bibliothek anbietet. Erwartung nach ADR-15: reicht NICHT.
+#   B) von Vault erzwungene Rotation: Dienst beenden, IPT-Zustand und
+#      IPT-Schluessel loeschen, mit verkleinerter Clientliste neu starten.
+#
+# `experimental-api` ist noetig, weil die client-seitige Verwaltung der
+# Client-Auth-Schluessel in arti-client 0.44.0 dahinter liegt (Messergebnis S1).
+
+[dependencies]
+arti-client = { version = "0.44.0", default-features = false, features = [
+    "tokio",
+    "native-tls",
+    "compression",
+    "onion-service-client",
+    "onion-service-service",
+    "keymgr",
+    "experimental-api",
+    "static-sqlite",
+] }
+tor-hsservice = { version = "0.44.0", features = ["restricted-discovery"] }
+tor-hscrypto = "0.44.0"
+tor-rtcompat = { version = "0.44.0", features = ["tokio", "native-tls"] }
+tor-keymgr = "0.44.0"
+tor-config = "0.44.0"
+tor-config-path = "0.44.0"
+tor-cell = "0.44.0"
+tor-llcrypto = "0.44.0"
+safelog = "0.9.0"
+rand = "0.10.1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "io-util"] }
+futures = "0.3"
+anyhow = "1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[[bin]]
+name = "revocation-latency"
+path = "src/bin/revocation_latency.rs"

@@ -1,0 +1,41 @@
+    Finished `release` profile [optimized] target(s) in 0.59s
+     Running unittests src\lib.rs (target\release\deps\rot_proto-5e120771a225c763.exe)
+
+running 3 tests
+test stats::tests::perzentil_leer ... ok
+test stats::tests::perzentil_nearest_rank ... ok
+test stats::tests::urteil_grenze ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\rot_offline.rs (target\release\deps\rot_offline-b0031ebbd51e058c.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\rotation.rs (target\release\deps\rotation-cc88724fe85f65d2.exe)
+
+running 13 tests
+test auswertung_erkennt_ein_gerissenes_kriterium ... ok
+test unbekannter_kontakt_wird_abgewiesen ... ok
+test leerfall_wird_nicht_publiziert ... ok
+test revision_counter_waechst ... ok
+test make_before_break_hat_keine_erreichbarkeitsluecke ... ok
+test schritt_2_epoche_waechst ... ok
+test teardown_first_hat_eine_erreichbarkeitsluecke ... ok
+test schritt_4_und_5_mesh_und_session_weg ... ok
+test schritt_1_credential_entzogen ... ok
+test schritt_3_intro_points_sind_neu ... ok
+test alter_descriptor_bleibt_fuer_den_revozierten_lesbar ... ok
+test revozierter_kommt_an_neuen_descriptor_nicht_heran ... ok
+test auswertung_rechnet_gegen_das_kriterium ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+   Doc-tests rot_proto
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

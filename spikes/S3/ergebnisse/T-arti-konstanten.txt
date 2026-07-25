@@ -1,0 +1,106 @@
+# Spike S3 — zeitbestimmende Konstanten in tor-hsservice 0.44.0
+# 2026-07-25T22:24:22Z
+# Quelle: /c/Users/claude/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tor-hsservice-0.44.0
+
+== 1. Lebensdauer des publizierten Descriptors ==
+27:const IPT_PUBLISH_UNCERTAIN: Duration = Duration::from_secs(3 * 60 * 60); // 3 hours
+29:const IPT_PUBLISH_CERTAIN: Duration = IPT_PUBLISH_UNCERTAIN;
+1139:            Some(IPT_PUBLISH_CERTAIN)
+1191:            Some(IPT_PUBLISH_UNCERTAIN)
+2046:                    assert_eq!(pub_view.lifetime, IPT_PUBLISH_UNCERTAIN);
+2060:                    assert_eq!(pub_view.lifetime, IPT_PUBLISH_CERTAIN);
+
+== 2. Wie lange ein alter Intro-Point nach Ablauf noch gehalten wird ==
+136:const IPT_PUBLISH_EXPIRY_SLOP: Duration =
+137-    Duration::from_secs(10 * 60).saturating_add(crate::publish::OVERALL_UPLOAD_TIMEOUT);
+138-
+139-/// Shared view of introduction points - IPT manager's view
+
+== 3. Zeitbudget fuer den Descriptor-Upload ==
+108:/// `UPLOAD_RATE_LIM_THRESHOLD` seconds ago. If so, it uploads the descriptor to all HsDirs that
+109:/// need it. If not, it schedules the upload to happen `UPLOAD_RATE_LIM_THRESHOLD` seconds from the
+113:const UPLOAD_RATE_LIM_THRESHOLD: Duration = Duration::from_secs(60);
+130:pub(crate) const OVERALL_UPLOAD_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+1322:    /// to happen after [`UPLOAD_RATE_LIM_THRESHOLD`].
+1366:            if duration_since_upload < UPLOAD_RATE_LIM_THRESHOLD {
+
+== 4. Ab wann ein Intro-Point als fehlerhaft gilt ==
+502:const FAULTY_IPT_THRESHOLD: Duration = Duration::from_secs(15 * 60);
+528:        } else if now.saturating_duration_since(failing_since) >= FAULTY_IPT_THRESHOLD {
+
+== 5. Wann ein Intro-Point ueberhaupt vergessen wird ==
+829-        }
+830-
+831:        // Forget old IPTs (after the last descriptor mentioning them has expired)
+832-        for ir in &mut self.state.irelays {
+833-            // When we drop the Ipt we drop the IptEstablisher, withdrawing the intro point
+834-            ir.ipts.retain(|ipt| {
+835-                let keep = ipt.is_current.is_some()
+836-                    || match ipt.last_descriptor_expiry_including_slop {
+837-                        None => false,
+838-                        Some(last) => now < last,
+839-                    };
+840-                // This is the only place in the manager where an IPT is dropped,
+841-                // other than when the whole service is dropped.
+842-                self.state.ipt_removal_cleanup_needed |= !keep;
+843-                keep
+
+== 6. Rotationszeitpunkt wird zufaellig aus Konsensparametern gezogen ==
+1627-        let lifetime_low = netdir
+1628-            .params()
+1629:            .hs_intro_min_lifetime
+1630-            .try_into()
+1631-            .expect("Could not convert param to duration.");
+1632-        let lifetime_high = netdir
+1633-            .params()
+1634-            .hs_intro_max_lifetime
+1635-            .try_into()
+1636-            .expect("Could not convert param to duration.");
+1637-        let lifetime_range: std::ops::RangeInclusive<Duration> = lifetime_low..=lifetime_high;
+1638-        let retirement = rng
+1639-            .gen_range_checked(lifetime_range)
+1640-            // If the range from the consensus is invalid, just pick the high-bound.
+1641-            .unwrap_or(lifetime_high);
+
+== 7. Neustart stellt DIESELBEN Intro-Points wieder her ==
+143:    fn load_restart<R: Runtime, M: Mockable<R>>(
+159:            Some(IptExpectExistingKeys),
+182:        mockable.start_accepting(&*ipt.establisher);
+
+== 8. Entfernen eines Clients entzieht laut Doku keinen Zugriff ==
+//! ## Caveats
+//!
+//! ### Unauthorizing previously authorized clients
+//!
+//! Removing a previously authorized client from `static_keys` or `key_dirs`
+//! does **not** guarantee its access will be revoked.
+//! This is because the client might still be able to reach your service via
+//! its current introduction points (the introduction points are not rotated
+//! when the authorized clients change). Moreover, even if the introduction points
+//! are rotated by chance, your changes are not guaranteed to take effect immediately,
+//! so it is possible for the service to publish its new introduction points
+//! in a descriptor that is readable by the recently unauthorized client.
+//!
+//! **Restricted discovery mode is a DoS resistance mechanism,
+//! _not_ a substitute for conventional access control.**
+//!
+//! ### Moving `key_dir`s
+
+== 9. reconfigure erreicht bestehende Verbindungen moeglicherweise nicht ==
+495:        // TODO (#1153, #1209): We need to make sure that the various tasks listening on
+496-        // config_rx actually enforce the configuration, not only on new
+497-        // connections, but existing ones.
+498-    }
+499-
+
+== 10. pause() ist nicht implementiert ==
+553-    ///
+554-    /// It can be restarted with launch().
+555-    ///
+556-    /// You can also shut down an onion service completely by dropping the last
+557-    /// Clone of it.
+558-    pub fn pause(&self) {
+559:        todo!() // TODO (#1231)
+560-    }
+561-    */
+562-

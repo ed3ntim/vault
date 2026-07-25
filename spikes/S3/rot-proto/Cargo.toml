@@ -1,0 +1,30 @@
+[package]
+name = "rot-proto"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Spike S3 — Revocation-Latenz (Descriptor-Republish)
+# spec/phase0-spikeplan.md §3 (S3), spec/protokoll-spec.md §11, ADR-15
+#
+# Wegwerf-Prototyp der von Vault ERZWUNGENEN Intro-Point-Rotation:
+#   authorized_clients.remove(X) -> intro_point_epoch += 1
+#   -> rotate_intro_points() -> republish_descriptor()
+#
+# Der Descriptor wird ueber denselben Bibliothekspfad gebaut, den
+# tor-hsservice beim Publizieren nimmt (tor_netdoc::doc::hsdesc::HsDescBuilder,
+# vgl. tor-hsservice-0.44.0/src/publish/descriptor.rs).
+# Es findet KEIN Netzverkehr statt.
+
+[dependencies]
+tor-netdoc = { version = "0.44.0", features = ["hs-service", "hs-client"] }
+tor-hscrypto = "0.44.0"
+tor-llcrypto = "0.44.0"
+tor-linkspec = "0.44.0"
+tor-checkable = "0.44.0"
+tor-cell = "0.44.0"
+rand = "0.10.1"
+
+[[bin]]
+name = "rot-offline"
+path = "src/bin/rot_offline.rs"
