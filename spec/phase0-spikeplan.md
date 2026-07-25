@@ -70,12 +70,12 @@ Parallelisierbar auf 4 Personen. Kritischer Pfad: **S1 → S5 → S2**.
 
 **Erfolgskriterien:**
 - 0 Nachrichtenverluste, 0 Duplikate in 10.000 randomisierten Läufen
-- Konvergenz < 60 s nach Wiederverbindung
+- Konvergenz < 60 s ab Erreichbarkeit eines datenhaltenden Geschwistergeräts (ADR-07)
 - `skipped_message_keys` < 1000 pro Session (Speicherobergrenze)
 
-**Fallback:** Primärgerät-Modell (einfacher, aber Zweitgerät ohne Primärgerät nur eingeschränkt sendefähig).
+**Fallback — gezogen:** Das Primärgerät-Modell war als Fallback vorgesehen und ist nach Durchführung des Spikes die **getroffene Entscheidung** (GATE-2 / ADR-17). Preis: Zweitgerät ohne Primärgerät nur eingeschränkt sendefähig.
 
-**Entscheidung:** Multi-Device-Architektur für Phase 2 festgelegt.
+**Entscheidung:** Multi-Device-Architektur für Phase 2 festgelegt — Primärgerät-Modell, siehe ADR-17 und `spec/protokoll-spec.md` §9.3.
 
 ---
 

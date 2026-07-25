@@ -260,17 +260,16 @@ if kein Ack:
 ```
 Die **deterministische Zielreihenfolge** sorgt dafür, dass normalerweise **dasselbe Empfängergerät** die Nachricht erhält und damit die Ratchet der Gegenseite vorantreibt → Nebenläufigkeits-Konflikte selten.
 
-### 9.3 Empfang & Geschwister-Sync
-```
-on receive(envelope) on device d:
-    pt = DR_decrypt(...)                 // advance contact-ratchet
-    persist(pt); send Ack
-    replicate_to_siblings(SyncRecord{ contact_id, dr_delta, pt, msg_id })
-```
-- Eigene Geräte bilden ein **voll vernetztes Intra-Identity-Mesh** mit paarweisen DR-Sitzungen (Geräteschlüssel-basiert). Darüber laufen `SyncRecord` (Verlauf, Ratchet-Fortschritt, Kontaktliste, Kompartiment-Keys).
-- **Konfliktfall** (zwei Geräte empfangen gleichzeitig auf derselben Kontakt-Session, bevor sie syncen): toleriert durch DR-Skipped-Message-Keys; anschließende Reconciliation wählt den vom Sender zuerst quittierten Zweig, das andere Gerät holt per `SyncRecord` nach. Selten dank 9.2.
+### 9.3 Empfang & Geräte-Rollen (Primärgerät-Modell, GATE-2 / ADR-17)
 
-> **Spike (Phase 0):** Multi-Device-Ratchet-Sync ist der komplexeste Teil. Fallback-Option, falls paarweiser DR-Sync zu teuer: ein designiertes Primärgerät hält den kanonischen Session-Zustand, Zweitgeräte sind Read-Through-Replikate mit Send-Proxy übers Primärgerät. Entscheidung nach Spike.
+Der Double-Ratchet-Zustand einer Kontakt-Session existiert **nur auf dem Primärgerät**. Zweitgeräte halten keinen eigenen Ratchet-Zustand für Kontakte.
+
+- **Empfang:** Nur das Primärgerät entschlüsselt eingehende Kontakt-Envelopes und treibt die Ratchet voran. Es setzt das E2E-ACK; `delivered` wird ausschließlich vom Primärgerät gesetzt.
+- **Zweitgeräte sind Read-Through-Replikate:** Sie erhalten entschlüsselte Verläufe per `SyncRecord` über das Intra-Identity-Mesh, reichen aber eingehende Kontakt-Envelopes nur als **opake Bytes** ans Primärgerät weiter, ohne sie zu entschlüsseln.
+- **Senden vom Zweitgerät:** als Send-Proxy über das Primärgerät. Ist das Primärgerät nicht erreichbar, zeigt das Zweitgerät ehrlich „nicht sendefähig" statt eine Ratchet-Operation zu simulieren.
+- **Rollenwechsel** (Primärgerät verloren/gewechselt) ist ein eigener, noch ungetesteter Ablauf → Restrisiko **R-11**, Spike vor Phase 2.
+
+**Begründung:** Der Double Ratchet ist ein Zwei-Parteien-Protokoll; sein Sendezustand ist nicht über mehrere Geräte replizierbar. Die frühere Fassung (paarweiser Multi-Device-Ratchet) verlor strukturell Nachrichten (Spike S2: 4,15 % untere Schranke) und ist verworfen.
 
 ### 9.4 Zustellstatus-FSM
 ```
@@ -366,7 +365,7 @@ INVITED ─send/recv ContactCard─▶ PENDING ─AckEstablished─▶ ESTABLISH
 | # | Frage | Warum kritisch |
 |---|---|---|
 | S1 | Arti-Reifegrad für Onion-Service **mit Client-Auth** | Bestimmt Tor-Stack-Wahl; C-tor-Interim braucht Sandbox |
-| S2 | Multi-Device-Ratchet-Sync: paarweiser DR vs. Primär-Replikat (§9.3) | Komplexester Teil; Fehler → Nachrichtenverlust/Doppelentschlüsselung |
+| ~~S2~~ | **Entschieden (GATE-2 / ADR-17):** Primärgerät-Modell. Paarweiser Multi-Device-Ratchet ist verworfen — er verliert strukturell Nachrichten. Siehe §9.3 | — |
 | S3 | Descriptor-Republish-Latenz bei Revocation | Zeitfenster, in dem ein revozierter Kontakt noch verbindet |
 | S4 | Randomisierte Publikation vs. Tor-HSDir-Timing | Präsenzschutz nur wirksam, wenn HSDir-Upload-Muster nicht doch korreliert |
 | S5 | Akku unter Dauer-Onion + Snowflake + Mesh-Beacons | Praktische Tragfähigkeit auf Mobil |
