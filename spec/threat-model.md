@@ -125,7 +125,7 @@ Legende Restrisiko: **○** vernachlässigbar · **◐** gemindert, benannt · *
 | G7 | Physisches Tracking über Mesh-Beacons | Mesh-Sichtbarkeit **pro Kontakt schaltbar**; Revocation löscht `mesh_key` → Token nicht mehr berechenbar | ◐ |
 | G6 | Gruppenmitgliedschaft und -timing | Inhärent an der Mitgliedschaft. Minimierung: Pairwise-Fanout-Modus ohne Gruppen-Metadatenpunkt | ● |
 | G1 | Content-Equivocation in Gruppen | Transcript-Hash-Kette + Gossip → Divergenz wird gemeldet | ◐ |
-| — | Weiterbestehender Zugriff nach Enttarnung | **Ein-Schritt-Revocation**: Credential + Intro-Point-Rotation + Mesh-Key + Session-Purge | ○ |
+| — | Weiterbestehender Zugriff nach Enttarnung | **Ein-Schritt-Revocation**: Credential + Intro-Point-Rotation + Mesh-Key + Session-Purge; **erzwungene Intro-Point-Rotation (ADR-15) statt Transport-Garantie** | ◐ (○ erst nach S3-Nachweis, dass die Rotation greift) |
 
 ### A5 — Physisch naher Angreifer
 

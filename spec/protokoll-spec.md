@@ -310,6 +310,8 @@ c = X.compartment_id
 5. drop DR_X, purge session keys (zeroize)
 6. replicate RevocationNotice an eigene Geräte (SyncRecord)
 ```
+Die Intro-Point-Rotation (Schritt 2–3) ist von Vault **erzwungen**, nicht von der Transportschicht vorausgesetzt (ADR-15). Eine Revocation gilt erst als wirksam, wenn Rotation und Descriptor-Neuveröffentlichung bestätigt sind. Bis dahin zeigt die UI „Trennung läuft", nicht „getrennt" — dieselbe Ehrlichkeitsregel wie bei `delivered` (§9.4). Der revozierte Kontakt kann bis zur bestätigten Rotation über zwischengespeicherte Intro-Points noch verbinden; dieses Fenster misst Spike S3.
+
 Ergebnis in einem Schritt: **kein Reach, keine Präsenz-Sicht, kein Mesh-Tracking** mehr für X. Andere Kontakte im selben Kompartiment unberührt. Keine Neu-Verifikation nötig.
 
 > Restlinkbarkeit: Teilen mehrere Kontakte dasselbe Kompartiment, wissen zwei kompromittierte darunter, dass sie dieselbe Person kennen. Hochsensible Kontakte daher in eigenes, minimal besetztes Kompartiment (UI-Führung).
