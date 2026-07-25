@@ -1,0 +1,46 @@
+[workspace]
+resolver = "2"
+members = [
+    "vault-crypto",
+    "vault-identity",
+    "vault-wire",
+    "vault-transport",
+    "vault-delivery",
+    "vault-groups",
+    "vault-storage",
+    "vault-core",
+    "vault-ffi",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.97"
+publish = false
+
+# Lint-Politik. Setzt die Regeln aus CLAUDE.md und
+# spec/engineering-setup.md §3.1 als Build-Fehler durch (Gate G-2).
+#
+# `unsafe_code` wird bewusst NICHT hier gesetzt, sondern als
+# `#![forbid(unsafe_code)]` in jeder lib.rs: Gate G-6 prueft die Quelle,
+# und vault-ffi braucht eine dokumentierte Ausnahme.
+[workspace.lints.rust]
+missing_docs = "deny"
+unreachable_pub = "deny"
+missing_debug_implementations = "deny"
+
+[workspace.lints.clippy]
+# Keine unwrap()/expect() in Bibliothekscode (spec/engineering-setup.md §3.1)
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+# Keine Ausgaben aus Bibliothekscode — Log-Leak-Regel, zusaetzlich Gate G-7
+print_stdout = "deny"
+print_stderr = "deny"
+dbg_macro = "deny"
+# Kein unfertiger Code, der zur Laufzeit abstuerzt
+todo = "deny"
+unimplemented = "deny"
+# Parser laufen auf Angreifer-kontrollierten Bytes: kein Panic durch Indizierung
+indexing_slicing = "deny"
+arithmetic_side_effects = "deny"

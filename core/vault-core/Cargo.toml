@@ -1,0 +1,18 @@
+[package]
+name = "vault-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+vault-crypto = { path = "../vault-crypto" }
+vault-identity = { path = "../vault-identity" }
+vault-wire = { path = "../vault-wire" }
+vault-transport = { path = "../vault-transport" }
+vault-delivery = { path = "../vault-delivery" }
+vault-groups = { path = "../vault-groups" }
+vault-storage = { path = "../vault-storage" }

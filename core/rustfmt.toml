@@ -1,0 +1,6 @@
+# Deterministische Formatierung, damit `cargo fmt --check` (Gate G-2)
+# auf allen Plattformen dasselbe Ergebnis liefert.
+edition = "2021"
+max_width = 100
+newline_style = "Unix"
+use_small_heuristics = "Default"

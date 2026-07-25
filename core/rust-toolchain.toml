@@ -1,0 +1,9 @@
+# Fester Toolchain-Pin. Voraussetzung fuer Gate G-9 (reproduzierbarer Build,
+# spec/engineering-setup.md §4) — die Toolchain ist Teil des Build-Inputs.
+#
+# cargo-fuzz (Gate G-8) benoetigt nightly; das wird dort explizit ueber
+# `cargo +nightly` angefordert und ist kein Build-Input fuer Releases.
+[toolchain]
+channel = "1.97.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

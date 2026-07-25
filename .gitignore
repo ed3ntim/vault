@@ -1,4 +1,9 @@
 /target
+core/target/
+tests/fuzz/target/
+tests/fuzz/corpus/
+tests/fuzz/artifacts/
+tests/fuzz/coverage/
 **/*.rs.bk
 .DS_Store
 .claude/agent-memory-local/

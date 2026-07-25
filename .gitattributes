@@ -1,0 +1,12 @@
+# Zeilenenden sind Build-Input.
+#
+# Gate G-2 prueft mit `cargo fmt --check` gegen `newline_style = "Unix"`;
+# Gate G-9 (reproduzierbarer Build, spec/engineering-setup.md §4) verlangt
+# bitidentische Artefakte von zwei unabhaengigen Buildern. Beides bricht,
+# sobald Git auf einer Plattform CRLF in den Arbeitsbaum schreibt.
+# Deshalb: ueberall LF, unabhaengig von der Plattform des Entwicklers.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
