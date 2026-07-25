@@ -1,0 +1,18 @@
+# Spike-Rohdaten sind Belege, keine Quelltexte.
+#
+# spikes/S2/data/*.jsonl sind die Rohergebnisse der 10.000-Lauf-Suite aus
+# Spike S2 (spec/phase0-spikeplan.md §2). Sie werden mitversioniert, weil
+# die Zahlen im BERICHT.md sonst nicht nachpruefbar waeren — genau diese
+# Nachpruefung hat den Bericht bereits einmal bestaetigt.
+#
+# `binary` bewirkt zweierlei:
+#   -diff  : kein zeilenweiser Textdiff ueber ~10^4 Zeilen JSONL, der jede
+#            Anzeige unbrauchbar machen wuerde
+#   -text  : keine eol-Normalisierung; die Bytes bleiben exakt so, wie der
+#            Messlauf sie erzeugt hat (Wurzel-.gitattributes erzwingt sonst LF)
+#
+# Bewusst kein Git-LFS: das Repo hat kein Remote. LFS-Pointer ohne
+# erreichbaren LFS-Endpunkt machen die Belege in einem frischen Clone
+# unauffindbar. Bei 2,1 MB gzip ist das ein schlechter Tausch.
+# Nachruesten waere jederzeit mit `git lfs migrate` moeglich.
+S2/data/*.jsonl binary
