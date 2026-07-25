@@ -1,0 +1,34 @@
+# Lange Fuzz-Laeufe (spec/engineering-setup.md §4, Gate G-8:
+# "kurze Laeufe [in CI]; lange Laeufe nightly").
+name: Nightly Fuzz
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz-long:
+    name: Fuzz ${{ matrix.target }} (30 min)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [invitation, envelope, group_frame, attestation]
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install nightly --profile minimal
+      - run: cargo install --locked cargo-fuzz
+      - name: Fuzz
+        run: |
+          cargo +nightly fuzz run --fuzz-dir tests/fuzz ${{ matrix.target }} -- \
+            -max_total_time=1800 -max_len=4096
+      - name: Fundstuecke sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}
+          path: tests/fuzz/artifacts/

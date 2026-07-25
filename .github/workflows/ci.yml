@@ -1,0 +1,92 @@
+# CI-Gates G-1 … G-8 (spec/engineering-setup.md §4).
+#
+# Grundsatz: Die Gate-Logik liegt in ops/ci/*.sh, nicht in dieser Datei.
+# Dadurch laeuft lokal exakt dasselbe wie hier — ein Gate, das nur in CI
+# existiert, wird lokal umgangen.
+#
+# Fremde Actions sind auf actions/checkout beschraenkt. Vor der ersten
+# oeffentlichen Veroeffentlichung sind auch diese auf einen Commit-SHA zu
+# pinnen (gesamtkonzept.md §2.11, SC-5) — offener Punkt.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  # --- G-1: Build auf allen Zielplattformen ------------------------------
+  # ADR-12 nennt Android + Windows + Linux. Android-Cross-Compile braucht
+  # das NDK im Runner und fehlt hier noch — offener Punkt, kein stilles
+  # Weglassen.
+  g1-build:
+    name: G-1 Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        working-directory: core
+        run: cargo build --workspace --all-targets --locked
+
+  # --- G-2: Tests, Format, Lints ----------------------------------------
+  g2-tests:
+    name: G-2 Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ops/ci/g2-tests.sh
+
+  # --- G-3: cargo-deny ---------------------------------------------------
+  g3-deny:
+    name: G-3 cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo install --locked cargo-deny
+      - run: bash ops/ci/g3-deny.sh
+
+  # --- G-4: cargo-vet ----------------------------------------------------
+  g4-vet:
+    name: G-4 cargo-vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo install --locked cargo-vet
+      - run: bash ops/ci/g4-vet.sh
+
+  # --- G-5 bis G-7: Schichtregel, unsafe, Secrets/Log-Leak ---------------
+  g5-g7-policy:
+    name: G-5/G-6/G-7 Policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ops/ci/g5-layers.sh
+      - run: bash ops/ci/g6-unsafe.sh
+      - run: bash ops/ci/g7-secrets.sh
+
+  # --- G-8: Fuzzing-Smoke ------------------------------------------------
+  g8-fuzz:
+    name: G-8 Fuzz-Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install nightly --profile minimal
+      - run: cargo install --locked cargo-fuzz
+      - run: bash ops/ci/g8-fuzz-smoke.sh
+        env:
+          FUZZ_SECONDS: 30

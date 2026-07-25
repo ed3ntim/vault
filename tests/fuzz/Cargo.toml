@@ -1,0 +1,47 @@
+[package]
+name = "vault-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+vault-wire = { path = "../../core/vault-wire" }
+
+# Eigener Workspace: das Fuzz-Crate ist Werkzeug, kein Bestandteil des
+# ausgelieferten Kerns, und braucht nightly (Gate G-8).
+[workspace]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "invitation"
+path = "fuzz_targets/invitation.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "envelope"
+path = "fuzz_targets/envelope.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "group_frame"
+path = "fuzz_targets/group_frame.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "attestation"
+path = "fuzz_targets/attestation.rs"
+test = false
+doc = false
+bench = false

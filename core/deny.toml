@@ -1,0 +1,65 @@
+# Policy fuer Gate G-3 (spec/engineering-setup.md §4).
+# Gilt fuer beide Manifeste: core/ und tests/fuzz/ (siehe ops/ci/g3-deny.sh).
+
+[graph]
+all-features = true
+
+[advisories]
+# Bekannte Schwachstellen und zurueckgezogene Versionen brechen den Build.
+# `ignore` bleibt leer: eine Ausnahme braucht einen ADR, keinen Eintrag.
+yanked = "deny"
+ignore = []
+
+[licenses]
+# Minimale, permissive Auswahl. Eigene Crates tragen bewusst noch keine
+# Lizenzangabe (publish = false) — die Lizenzentscheidung fuer das Projekt
+# ist offen und wird nicht nebenbei in einem Manifest getroffen.
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CC0-1.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "NCSA",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+confidence-threshold = 0.93
+private = { ignore = true }
+# Der Kern-Workspace ist derzeit ohne externe Abhaengigkeit; dort trifft die
+# Allowlist naturgemaess auf keine Lizenz. Das ist kein Befund.
+unused-allowed-license = "allow"
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+# Workspace-interne Pfad-Abhaengigkeiten tragen bewusst keine Version: die
+# Crates werden nicht veroeffentlicht (publish = false). Fuer Registry-Deps
+# bleibt die Wildcard-Sperre in Kraft — dort waere sie ein Lieferkettenrisiko.
+allow-wildcard-paths = true
+# Netz- und Telemetriebibliotheken sind auf Dependency-Ebene gesperrt.
+# Normativ: ADR-02 (Tor als einziger Internet-Transport), ADR-14 (kein
+# Telemetrie-, Crash- oder Analytics-Backend), CLAUDE.md („kein HTTP-Client,
+# keine Analytics, kein Crash-Reporting").
+deny = [
+    { crate = "reqwest", reason = "HTTP-Client — verletzt ADR-02/ADR-14" },
+    { crate = "hyper", reason = "HTTP-Stack — verletzt ADR-02/ADR-14" },
+    { crate = "ureq", reason = "HTTP-Client — verletzt ADR-02/ADR-14" },
+    { crate = "attohttpc", reason = "HTTP-Client — verletzt ADR-02/ADR-14" },
+    { crate = "isahc", reason = "HTTP-Client — verletzt ADR-02/ADR-14" },
+    { crate = "surf", reason = "HTTP-Client — verletzt ADR-02/ADR-14" },
+    { crate = "curl", reason = "HTTP-Client — verletzt ADR-02/ADR-14" },
+    { crate = "curl-sys", reason = "HTTP-Client — verletzt ADR-02/ADR-14" },
+    { crate = "sentry", reason = "Crash-Reporting — verletzt ADR-14" },
+    { crate = "sentry-core", reason = "Crash-Reporting — verletzt ADR-14" },
+    { crate = "opentelemetry", reason = "Telemetrie — verletzt ADR-14" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
