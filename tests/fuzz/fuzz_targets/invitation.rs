@@ -2,18 +2,21 @@
 //!
 //! Zieltyp: `Invitation` — Kontaktaufbau out-of-band, spec/protokoll-spec.md §4.
 //!
-//! Deckung heute: die gemeinsame Parserbasis von `vault-wire`
-//! (deterministisches CBOR nach RFC 8949 §4.2 und laengenpraefigierte
-//! Felder). Der typspezifische Decoder folgt mit Sprint 0 #3 und wird hier
-//! eingehaengt. Siehe tests/fuzz/README.md.
-//!
-//! Invariante: kein Panic, keine Endlosschleife, keine Allokation
-//! proportional zu einer Angreifer-Laengenangabe — nur `Err`.
+//! Geprueft werden drei Invarianten auf Angreifer-kontrollierten Bytes:
+//! 1. kein Panic, keine Endlosschleife, keine Allokation proportional zu
+//!    einer Laengenangabe — nur `Err`;
+//! 2. die Parserbasis (kanonisches CBOR, laengenpraefigierte Felder) bleibt
+//!    robust;
+//! 3. **Kanonizitaet**: was sich dekodieren laesst, muss sich bitidentisch
+//!    zurueck kodieren lassen. Zwei verschiedene Bytefolgen duerfen nie
+//!    dieselbe Invitation ergeben — sonst waere die Signatur ueber die
+//!    Struktur (§4 `sig`) nicht eindeutig.
 
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
 use vault_wire::cbor;
+use vault_wire::invitation::Invitation;
 use vault_wire::lenprefix::FieldReader;
 
 /// Obergrenze fuer ein einzelnes laengenpraefigiertes Feld beim Fuzzing.
@@ -28,5 +31,14 @@ fuzz_target!(|data: &[u8]| {
             Ok(Some(_)) => {}
             Ok(None) | Err(_) => break,
         }
+    }
+
+    if let Ok(inv) = Invitation::decode(data) {
+        let wieder = inv.encode().expect("dekodierte Invitation muss kodierbar sein");
+        assert_eq!(
+            wieder.as_slice(),
+            data,
+            "Dekodieren und Kodieren muss bitidentisch sein"
+        );
     }
 });

@@ -41,6 +41,16 @@ pub enum WireError {
     FieldTooLong,
     /// Der Typ ist noch nicht implementiert (Sprint 0 #3).
     NotImplemented,
+    /// An dieser Stelle stand ein anderer CBOR-Typ als erwartet.
+    UnexpectedType,
+    /// Ein Wert passt nicht in den Zieltyp oder hat die falsche Laenge.
+    ValueOutOfRange,
+    /// Ein Pflichtfeld fehlt oder ein Feldschluessel ist unbekannt.
+    FieldMismatch,
+    /// Die Versionsnummer der Struktur wird nicht unterstuetzt.
+    UnsupportedVersion,
+    /// Unbekannte Variante eines Summentyps (z. B. `Payload`).
+    UnknownVariant,
 }
 
 impl fmt::Display for WireError {
@@ -61,6 +71,11 @@ impl fmt::Display for WireError {
             Self::LengthOverflow => "length overflow",
             Self::FieldTooLong => "field too long",
             Self::NotImplemented => "not implemented",
+            Self::UnexpectedType => "unexpected cbor type",
+            Self::ValueOutOfRange => "value out of range",
+            Self::FieldMismatch => "field mismatch",
+            Self::UnsupportedVersion => "unsupported version",
+            Self::UnknownVariant => "unknown variant",
         };
         f.write_str(text)
     }

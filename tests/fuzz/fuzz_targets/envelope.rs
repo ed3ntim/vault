@@ -1,19 +1,17 @@
 //! Fuzz-Target `envelope` (Gate G-8, spec/engineering-setup.md §3.2).
 //!
-//! Zieltyp: `Envelope` — Aussenhuelle einer zugestellten Nachricht, spec/protokoll-spec.md §8, §9.
+//! Zieltyp: `Envelope` und `Payload` — spec/protokoll-spec.md §8, §9.
 //!
-//! Deckung heute: die gemeinsame Parserbasis von `vault-wire`
-//! (deterministisches CBOR nach RFC 8949 §4.2 und laengenpraefigierte
-//! Felder). Der typspezifische Decoder folgt mit Sprint 0 #3 und wird hier
-//! eingehaengt. Siehe tests/fuzz/README.md.
-//!
-//! Invariante: kein Panic, keine Endlosschleife, keine Allokation
-//! proportional zu einer Angreifer-Laengenangabe — nur `Err`.
+//! Invarianten wie im Target `invitation`: kein Panic, robuste Parserbasis,
+//! und bitidentischer Rueckweg fuer alles, was sich dekodieren laesst.
+//! Letzteres traegt hier zusaetzlich, weil `ad = H(dr_header)` (§8) an die
+//! Kodierung gebunden ist.
 
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
 use vault_wire::cbor;
+use vault_wire::envelope::{Envelope, Payload};
 use vault_wire::lenprefix::FieldReader;
 
 /// Obergrenze fuer ein einzelnes laengenpraefigiertes Feld beim Fuzzing.
@@ -28,5 +26,15 @@ fuzz_target!(|data: &[u8]| {
             Ok(Some(_)) => {}
             Ok(None) | Err(_) => break,
         }
+    }
+
+    if let Ok(env) = Envelope::decode(data) {
+        let wieder = env.encode().expect("dekodierter Envelope muss kodierbar sein");
+        assert_eq!(wieder.as_slice(), data, "Envelope: Rueckweg nicht bitidentisch");
+    }
+
+    if let Ok(p) = Payload::decode(data) {
+        let wieder = p.encode().expect("dekodierte Payload muss kodierbar sein");
+        assert_eq!(wieder.as_slice(), data, "Payload: Rueckweg nicht bitidentisch");
     }
 });

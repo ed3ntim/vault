@@ -21,13 +21,23 @@
 //! CBOR ist kein Kryptoprimitiv — die Eigenbau-Sperre aus ADR-05 ist nicht
 //! beruehrt.
 //!
-//! Die Typen `Invitation` (§4), `Envelope` (§8), `GroupFrame` (§12) und
-//! `Attestation` (`spec/gruppen-spec.md` §5) folgen mit Sprint 0 #3.
+//! Darauf aufbauend:
+//!
+//! * [`codec`] — deterministischer CBOR-Encoder und -Decoder. Der Decoder
+//!   validiert die Eingabe vorab; nicht-kanonische Bytes werden abgewiesen,
+//!   statt tolerant gelesen zu werden.
+//! * [`invitation`] — `Invitation` nach §4.
+//! * [`envelope`] — `Envelope` und `Payload` nach §8.
+//!
+//! Offen: `GroupFrame` (§12) und `Attestation` (`spec/gruppen-spec.md` §5).
+//! Die Feldnummerierung der CBOR-Maps ist eine Implementierungsfestlegung —
+//! **GATE-6** („Wire-Format final") ist nicht entschieden.
 
 #![forbid(unsafe_code)]
 
 pub mod attestation;
 pub mod cbor;
+pub mod codec;
 pub mod envelope;
 pub mod error;
 pub mod group_frame;

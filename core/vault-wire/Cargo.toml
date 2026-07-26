@@ -7,3 +7,10 @@ publish.workspace = true
 
 [lints]
 workspace = true
+
+# Schluesselmaterial loeschen (CLAUDE.md, engineering-setup.md §3.1).
+# Invitation.compartment.ca_priv ist nach protokoll-spec.md §4 ein PRIVATER
+# Client-Auth-Schluessel und durchlaeuft denselben Lebenszyklus wie die
+# Schluesseltypen in vault-crypto.
+[dependencies]
+zeroize = { version = "1.9.0", default-features = false, features = ["zeroize_derive", "alloc"] }
