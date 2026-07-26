@@ -511,26 +511,77 @@ mod tests {
         );
     }
 
+    /// Der Vorrat darf **nie** über [`MAX_SKIPPED_STORED`] wachsen.
+    ///
+    /// Diese Eigenschaft ist unabhängig von der Verdrängungspolitik und gilt
+    /// vor wie nach ADR-19.
     #[test]
-    fn speicherobergrenze_haelt_ueber_mehrere_luecken() {
+    fn speicherobergrenze_wird_nie_ueberschritten() {
         let (mut a, mut b, mut rng) = paar();
         for _ in 0..3 {
             for _ in 0..600 {
                 let _ = a.encrypt(b"x").unwrap();
             }
             let (h, ct) = a.encrypt(b"trigger").unwrap();
-            let res = b.decrypt(&h, &ct, rng.key());
+            let _ = b.decrypt(&h, &ct, rng.key());
             assert!(
                 b.skipped_len() <= MAX_SKIPPED_STORED,
                 "Vorrat ueberschritten: {}",
                 b.skipped_len()
             );
-            if res.is_err() {
-                assert_eq!(res, Err(CryptoError::SkippedKeyLimitExceeded));
-                return;
-            }
         }
-        panic!("Obergrenze haette greifen muessen");
+    }
+
+    /// Regression zu **HOCH-2** des unabhängigen Gegenlesens.
+    ///
+    /// Der Vorgängertest feierte das Erreichen der Obergrenze als Erfolg und
+    /// kehrte zurück, ohne zu prüfen, ob die Session danach noch benutzbar
+    /// ist — er kodifizierte damit genau die Verklemmung als korrektes
+    /// Verhalten.
+    ///
+    /// Gemessener Angriff: Ein Angreifer unterschlägt einmalig
+    /// [`MAX_SKIPPED_STORED`] Frames. Danach ist der Vorrat voll und schrumpft
+    /// nur noch, wenn die unterschlagenen Nachrichten doch noch eintreffen —
+    /// was sie nie tun. Ab da scheitert **jede** weitere Nachricht mit einer
+    /// Lücke, dauerhaft. Aufwand einmalig, Wirkung permanent
+    /// (`spec/threat-model.md` A7/G8, dort als ○ geführt).
+    ///
+    /// **Dieser Test ist gegen den nicht-verdrängenden Stand rot.** Er
+    /// dokumentiert HOCH-2, bis die FIFO-Verdrängung aus ADR-19 ihn grün
+    /// macht.
+    #[test]
+    fn voller_store_blockiert_die_session_nicht() {
+        let (mut a, mut b, mut rng) = paar();
+
+        // Den Vorrat bis zur Obergrenze fuellen: alles ausser der letzten
+        // Nachricht wird unterschlagen.
+        let anzahl = MAX_SKIPPED_STORED.saturating_add(1);
+        let mut unterschlagen = Vec::with_capacity(anzahl);
+        for i in 0..anzahl {
+            unterschlagen.push(a.encrypt(format!("weg{i}").as_bytes()).unwrap());
+        }
+        let letzte = unterschlagen.pop().unwrap();
+        b.decrypt(&letzte.0, &letzte.1, rng.key()).unwrap();
+        assert_eq!(
+            b.skipped_len(),
+            MAX_SKIPPED_STORED,
+            "Vorbedingung: Vorrat muss voll sein"
+        );
+
+        // Eine weitere Luecke: n wird unterschlagen, n+1 kommt an.
+        let _verloren = a.encrypt(b"verloren").unwrap();
+        let (h, ct) = a.encrypt(b"muss ankommen").unwrap();
+
+        assert_eq!(
+            b.decrypt(&h, &ct, rng.key()).unwrap(),
+            b"muss ankommen",
+            "voller Vorrat darf die Session nicht dauerhaft blockieren"
+        );
+        assert!(
+            b.skipped_len() <= MAX_SKIPPED_STORED,
+            "Obergrenze muss auch bei Verdraengung halten: {}",
+            b.skipped_len()
+        );
     }
 
     #[test]

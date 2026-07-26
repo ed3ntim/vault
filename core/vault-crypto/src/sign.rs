@@ -171,16 +171,96 @@ mod tests {
         );
     }
 
-    /// Regression zu Befund H-2 des Security-Reviews: Ein Punkt kleiner
-    /// Ordnung als Verifikationsschluessel erlaubt Signaturen, die fuer
-    /// nahezu jede Nachricht gelten. Die Bindung aus §2 („IK signiert alles
-    /// Abgeleitete") haengt daran, dass das abgewiesen wird.
+    /// Kodierung des neutralen Elements der Ed25519-Gruppe: `y = 1`,
+    /// Vorzeichenbit 0.
+    fn neutrales_element() -> [u8; ED25519_KEY_LEN] {
+        let mut b = [0u8; ED25519_KEY_LEN];
+        b[0] = 1;
+        b
+    }
+
+    /// Die **universelle Fälschung**: `A = R = neutrales Element`, `s = 0`.
+    ///
+    /// Die Verifikationsgleichung `[s]B = R + [k]A` wird damit zu
+    /// `identity = identity + [k]·identity` — sie gilt für **jede**
+    /// Nachricht, ohne dass der Fälscher irgendeinen Schlüssel kennt.
+    fn universelle_faelschung() -> [u8; ED25519_SIG_LEN] {
+        let mut sig = [0u8; ED25519_SIG_LEN];
+        sig[0] = 1;
+        sig
+    }
+
+    /// Regression zu Befund H-2 (erstes Review) und HOCH-1 (Gegenlesen).
+    ///
+    /// Der ursprüngliche Test prüfte gegen All-Zero-Schlüssel und
+    /// All-Zero-Signatur — die werden auch **ohne** `verify_strict`
+    /// abgewiesen, der Test blieb bei zurückgenommenem Fix grün und war
+    /// damit wertlos. Dieser Test prüft gegen die tatsächliche universelle
+    /// Fälschung: Ohne `verify_strict` verifiziert sie für jede Nachricht.
+    ///
+    /// Nachgewiesen per Scratchpad-Rücknahme: mit `verify` statt
+    /// `verify_strict` wird dieser Test **rot**.
     #[test]
-    fn schwacher_verifikationsschluessel_wird_abgewiesen() {
-        // Der All-Zero-Punkt ist der bekannteste Vertreter kleiner Ordnung.
-        let schwach = VerifyingPublic::from_bytes([0u8; 32]);
+    fn universelle_faelschung_mit_neutralem_element_wird_abgewiesen() {
+        let vk = VerifyingPublic::from_bytes(neutrales_element());
+        let sig = universelle_faelschung();
+
+        // Vier inhaltlich unvereinbare Nachrichten. Gegen den ungepatchten
+        // Zustand verifiziert dieselbe Signatur für alle vier.
+        for msg in [
+            &b""[..],
+            &b"beliebig"[..],
+            &b"ueberweise 10 EUR"[..],
+            &b"ueberweise 10000 EUR"[..],
+        ] {
+            assert_eq!(
+                vk.verify(msg, &sig),
+                Err(CryptoError::SignatureInvalid),
+                "universelle Faelschung wurde akzeptiert"
+            );
+        }
+    }
+
+    /// Dieselbe Fälschung gegen **alle** Signaturpfade der Spec.
+    ///
+    /// `spec/protokoll-spec.md` kennt fünf Stellen, an denen eine Ed25519-
+    /// Signatur die Identitätshierarchie trägt. Alle laufen über denselben
+    /// Wrapper [`VerifyingPublic::verify`] — im ganzen Repo gibt es keinen
+    /// zweiten Verifikationspfad, `ed25519_dalek` wird ausschließlich hier
+    /// verwendet. Der Test hält beides fest: die Abweisung je Pfad und
+    /// implizit, dass es nur einen Pfad gibt.
+    #[test]
+    fn universelle_faelschung_greift_an_keinem_signaturpfad() {
+        let vk = VerifyingPublic::from_bytes(neutrales_element());
+        let sig = universelle_faelschung();
+
+        // Repraesentative Signatur-Eingaben je Pfad.
+        let pfade: [(&str, &[u8]); 5] = [
+            ("§3 cross_sig: Sig(IK, osk_ed_pub || id)", b"osk_ed_pub||0"),
+            ("§2 IK ueber DEVK", b"devk_ed_pub||geraet-1"),
+            ("§4 spk_sig: Sig(IK, spk_x_pub)", b"spk_x_pub"),
+            ("§4 pqspk_sig: Sig(IK, pqspk_ek)", b"pqspk_ek"),
+            ("§9.1 DeviceList.sig", b"device_list||epoch-7"),
+        ];
+
+        for (pfad, nachricht) in pfade {
+            assert_eq!(
+                vk.verify(nachricht, &sig),
+                Err(CryptoError::SignatureInvalid),
+                "Signaturpfad ungeschuetzt: {pfad}"
+            );
+        }
+    }
+
+    /// Ein schwacher Schlüssel darf auch dann nicht durchgehen, wenn die
+    /// Signatur regulär geformt ist.
+    #[test]
+    fn schwacher_schluessel_mit_gueltig_geformter_signatur_wird_abgewiesen() {
+        let echt = SigningPrivate::from_bytes([3u8; 32]);
+        let regulaere_signatur = echt.sign(b"m");
+        let schwach = VerifyingPublic::from_bytes(neutrales_element());
         assert_eq!(
-            schwach.verify(b"beliebig", &[0u8; ED25519_SIG_LEN]),
+            schwach.verify(b"m", &regulaere_signatur),
             Err(CryptoError::SignatureInvalid)
         );
     }
