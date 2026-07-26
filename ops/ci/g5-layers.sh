@@ -27,7 +27,30 @@ violation() { printf 'G-5 VERSTOSS: %s\n' "$1" >&2; fail=1; }
 # --- 1. vault-crypto: Dependency-Baum -------------------------------------
 # Allowlist: erlaubte Pakete im Baum von vault-crypto. Erweiterung nur mit
 # ADR-Bezug (ADR-05 legt die zulaessigen Verfahren fest).
-CRYPTO_ALLOWED="vault-crypto zeroize zeroize_derive subtle"
+#
+# Direkt eingebunden, je Verfahren aus spec/protokoll-spec.md §1:
+#   hkdf sha2          HKDF-SHA-256
+#   hmac               KDF_CK des Double Ratchet
+#   blake3             H(x) = BLAKE3-256
+#   chacha20poly1305   AEAD XChaCha20-Poly1305
+#   ed25519-dalek      Ed25519 (Sig/Vrf)
+#   x25519-dalek       X25519 (ECDH)
+#   zeroize subtle     engineering-setup.md §3.1 (loeschen, konstantzeitig)
+# Der Rest sind transitive Abhaengigkeiten genau dieser Crates. Keine davon
+# bringt I/O oder Netz mit — das ist der Punkt der Liste: neue Eintraege
+# fallen auf und muessen begruendet werden.
+CRYPTO_ALLOWED="vault-crypto
+zeroize zeroize_derive subtle
+hkdf hmac sha2 blake3 chacha20poly1305 ed25519-dalek x25519-dalek
+aead arrayref arrayvec block-buffer cfg-if chacha20 cipher constant_time_eq
+cpufeatures crypto-common curve25519-dalek curve25519-dalek-derive digest
+ed25519 generic-array inout opaque-debug poly1305 rand_core signature
+typenum universal-hash
+proc-macro2 quote syn unicode-ident"
+
+# Zeilenumbrueche der Liste zu einfachen Leerzeichen normalisieren, damit der
+# Mustervergleich unten greift.
+CRYPTO_ALLOWED="$(echo $CRYPTO_ALLOWED)"
 
 tree="$(cd "$CORE" && cargo tree --quiet -p vault-crypto -e normal --prefix none 2>/dev/null \
         | awk 'NF {print $1}' | sort -u)"

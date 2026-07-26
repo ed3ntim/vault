@@ -3,3 +3,141 @@
 
 [cargo-vet]
 version = "0.10"
+
+[imports.bytecodealliance]
+url = "https://raw.githubusercontent.com/bytecodealliance/wasmtime/main/supply-chain/audits.toml"
+
+[imports.embark-studios]
+url = "https://raw.githubusercontent.com/EmbarkStudios/rust-ecosystem/main/audits.toml"
+
+[imports.google]
+url = "https://raw.githubusercontent.com/google/supply-chain/main/audits.toml"
+
+[imports.isrg]
+url = "https://raw.githubusercontent.com/divviup/libprio-rs/main/supply-chain/audits.toml"
+
+[imports.mozilla]
+url = "https://raw.githubusercontent.com/mozilla/supply-chain/main/audits.toml"
+
+[imports.zcash]
+url = "https://raw.githubusercontent.com/zcash/rust-ecosystem/main/supply-chain/audits.toml"
+
+[[exemptions.aead]]
+version = "0.4.3"
+criteria = "safe-to-deploy"
+
+[[exemptions.arrayvec]]
+version = "0.7.8"
+criteria = "safe-to-deploy"
+
+[[exemptions.blake3]]
+version = "1.8.5"
+criteria = "safe-to-deploy"
+
+[[exemptions.cc]]
+version = "1.4.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.chacha20]]
+version = "0.9.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.chacha20poly1305]]
+version = "0.9.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.constant_time_eq]]
+version = "0.4.2"
+criteria = "safe-to-deploy"
+
+[[exemptions.cpufeatures]]
+version = "0.2.2"
+criteria = "safe-to-deploy"
+
+[[exemptions.crypto-common]]
+version = "0.1.7"
+criteria = "safe-to-deploy"
+
+[[exemptions.curve25519-dalek]]
+version = "4.1.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.curve25519-dalek-derive]]
+version = "0.1.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.digest]]
+version = "0.9.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.ed25519]]
+version = "2.2.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.ed25519-dalek]]
+version = "2.2.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.find-msvc-tools]]
+version = "0.1.9"
+criteria = "safe-to-deploy"
+
+[[exemptions.generic-array]]
+version = "0.14.5"
+criteria = "safe-to-deploy"
+
+[[exemptions.hkdf]]
+version = "0.12.4"
+criteria = "safe-to-deploy"
+
+[[exemptions.libc]]
+version = "0.2.189"
+criteria = "safe-to-deploy"
+
+[[exemptions.poly1305]]
+version = "0.7.2"
+criteria = "safe-to-deploy"
+
+[[exemptions.proc-macro2]]
+version = "1.0.107"
+criteria = "safe-to-deploy"
+
+[[exemptions.quote]]
+version = "1.0.47"
+criteria = "safe-to-deploy"
+
+[[exemptions.semver]]
+version = "1.0.28"
+criteria = "safe-to-deploy"
+
+[[exemptions.shlex]]
+version = "2.0.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.syn]]
+version = "2.0.119"
+criteria = "safe-to-deploy"
+
+[[exemptions.typenum]]
+version = "1.20.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.unicode-ident]]
+version = "1.0.24"
+criteria = "safe-to-deploy"
+
+[[exemptions.version_check]]
+version = "0.9.5"
+criteria = "safe-to-deploy"
+
+[[exemptions.x25519-dalek]]
+version = "2.0.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.zeroize]]
+version = "1.9.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.zeroize_derive]]
+version = "1.5.0"
+criteria = "safe-to-deploy"

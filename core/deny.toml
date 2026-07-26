@@ -59,6 +59,19 @@ deny = [
     { crate = "opentelemetry", reason = "Telemetrie — verletzt ADR-14" },
 ]
 
+# Unvermeidbare Duplikate. Jede Zeile braucht eine Begruendung und ist bei
+# jedem Dependency-Update erneut zu pruefen.
+#
+# cpufeatures: `blake3 1.8.5` verlangt 0.3, `chacha20 0.9.1` (ueber
+# chacha20poly1305) verlangt 0.2. Beide Verfahren sind in
+# spec/protokoll-spec.md §1 vorgeschrieben, die Versionsspanne ist
+# semver-inkompatibel und von hier aus nicht aufloesbar. Wirkung: minimal
+# groessere Lieferkettenflaeche (Threat Model A6). Faellt weg, sobald
+# chacha20 auf cpufeatures 0.3 zieht.
+# OFFENE FRAGE an die Projektleitung — siehe TAGESBERICHT.md.
+[[bans.skip]]
+crate = "cpufeatures"
+
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"

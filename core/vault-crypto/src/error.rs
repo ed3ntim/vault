@@ -21,6 +21,17 @@ pub enum CryptoError {
     RatchetStateInvalid,
     /// Obergrenze fuer `skipped_message_keys` erreicht (phase0-spikeplan.md S2).
     SkippedKeyLimitExceeded,
+    /// AEAD-Verschluesselung fehlgeschlagen.
+    AeadSealFailed,
+    /// Signatur oder Verifikationsschluessel ungueltig. Die beiden Faelle
+    /// werden bewusst nicht unterschieden.
+    SignatureInvalid,
+    /// Zu der Nachricht existiert kein Message Key mehr — entweder bereits
+    /// verbraucht (Forward Secrecy) oder nie vorhanden.
+    MessageKeyUnavailable,
+    /// Der Post-Quantum-KEM-Anteil von PQXDH ist noch nicht implementiert
+    /// (ADR-05, ML-KEM-768). Siehe `pqxdh`-Moduldokumentation.
+    KemNotImplemented,
 }
 
 impl fmt::Display for CryptoError {
@@ -31,6 +42,10 @@ impl fmt::Display for CryptoError {
             Self::AeadOpenFailed => "aead open failed",
             Self::RatchetStateInvalid => "ratchet state invalid",
             Self::SkippedKeyLimitExceeded => "skipped key limit exceeded",
+            Self::AeadSealFailed => "aead seal failed",
+            Self::SignatureInvalid => "signature invalid",
+            Self::MessageKeyUnavailable => "message key unavailable",
+            Self::KemNotImplemented => "kem not implemented",
         };
         f.write_str(text)
     }
