@@ -10,6 +10,7 @@
 //! Bytes und die DH-Operation selbst; damit bleibt `vault-crypto` frei von
 //! I/O (Schichtregel, Gate G-5).
 
+use subtle::{Choice, ConstantTimeEq};
 use x25519_dalek::{PublicKey, StaticSecret};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -90,6 +91,14 @@ impl DhPublic {
     #[must_use]
     pub fn as_bytes(&self) -> &[u8; X25519_LEN] {
         &self.0
+    }
+}
+
+impl ConstantTimeEq for DhPrivate {
+    /// Konstantzeitiger Vergleich (`spec/engineering-setup.md` §3.1).
+    /// `DhPrivate` implementiert bewusst kein `PartialEq`.
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0.ct_eq(&other.0)
     }
 }
 

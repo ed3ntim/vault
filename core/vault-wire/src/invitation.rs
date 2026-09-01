@@ -13,6 +13,7 @@
 //! Nummerierung ist deshalb an einer Stelle gebündelt und zur Bestätigung
 //! vorgelegt (siehe `TAGESBERICHT.md`).
 
+use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::codec::{Decoder, Encoder};
@@ -30,7 +31,7 @@ pub const INVITE_NONCE_LEN: usize = 16;
 /// eine Onion-Adresse. Deshalb `ZeroizeOnDrop` und ein redigiertes `Debug`
 /// (`CLAUDE.md`, `spec/engineering-setup.md` §3.1) — dasselbe Muster wie bei
 /// den Schlüsseltypen in `vault-crypto`.
-#[derive(Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+#[derive(Clone, Zeroize, ZeroizeOnDrop)]
 pub struct CompartmentPart {
     /// Onion-Adresse des Kompartiments.
     pub onion_addr: String,
@@ -249,6 +250,38 @@ fn expect_key(d: &mut Decoder<'_>, key: u64) -> Result<(), WireError> {
     }
 }
 
+impl core::fmt::Debug for CompartmentPart {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("CompartmentPart(redacted)")
+    }
+}
+
+impl core::fmt::Debug for PrekeyBundle {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("PrekeyBundle(redacted)")
+    }
+}
+
+impl core::fmt::Debug for Invitation {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("Invitation(redacted)")
+    }
+}
+
+impl PartialEq for CompartmentPart {
+    /// `ca_priv` ist nach §4 ein **privater** Schlüssel und wird deshalb
+    /// konstantzeitig verglichen (`spec/engineering-setup.md` §3.1). Ein
+    /// abgeleitetes `PartialEq` bräche früh ab und wäre ein Zeitorakel.
+    fn eq(&self, other: &Self) -> bool {
+        self.onion_addr == other.onion_addr
+            && self.osk_ed_pub == other.osk_ed_pub
+            && self.cross_sig == other.cross_sig
+            && bool::from(self.ca_priv.ct_eq(&other.ca_priv))
+    }
+}
+
+impl Eq for CompartmentPart {}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -349,24 +382,6 @@ mod tests {
             "klassischer Anteil sollte unter 600 B bleiben: {ohne_pq}"
         );
         assert!(mit_pq > ohne_pq);
-    }
-}
-
-impl core::fmt::Debug for CompartmentPart {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("CompartmentPart(redacted)")
-    }
-}
-
-impl core::fmt::Debug for PrekeyBundle {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("PrekeyBundle(redacted)")
-    }
-}
-
-impl core::fmt::Debug for Invitation {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("Invitation(redacted)")
     }
 }
 

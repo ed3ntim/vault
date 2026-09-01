@@ -12,6 +12,7 @@
 use hkdf::Hkdf;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
+use subtle::{Choice, ConstantTimeEq};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::error::CryptoError;
@@ -55,6 +56,18 @@ macro_rules! key_type_impl {
             /// (`spec/engineering-setup.md` §3.1).
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 f.write_str(concat!($name, "(redacted)"))
+            }
+        }
+
+        impl ConstantTimeEq for $t {
+            /// Konstantzeitiger Vergleich (`spec/engineering-setup.md` §3.1:
+            /// „Konstantzeit-Vergleiche für alle Geheimnisse (`subtle`)").
+            ///
+            /// Diese Typen implementieren bewusst **kein** `PartialEq`: ein
+            /// abgeleiteter Vergleich bräche früh ab und wäre damit ein
+            /// Zeitorakel über das Schlüsselmaterial.
+            fn ct_eq(&self, other: &Self) -> Choice {
+                self.0.ct_eq(&other.0)
             }
         }
     };

@@ -302,6 +302,26 @@ fn expect_key(d: &mut Decoder<'_>, key: u64) -> Result<(), WireError> {
     }
 }
 
+impl core::fmt::Debug for DrHeader {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("DrHeader(redacted)")
+    }
+}
+
+impl core::fmt::Debug for Envelope {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("Envelope(redacted)")
+    }
+}
+
+impl core::fmt::Debug for Payload {
+    /// Gibt nur die Variante preis, niemals Inhalte — `Payload::Text` traegt
+    /// den Klartext einer Nachricht (`CLAUDE.md`: keine Klartexte in Logs).
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Payload::tag({})(redacted)", self.variant_tag())
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -423,26 +443,6 @@ mod tests {
         let mut env = beispiel();
         env.ciphertext = Vec::new();
         assert_eq!(Envelope::decode(&env.encode().unwrap()).unwrap(), env);
-    }
-}
-
-impl core::fmt::Debug for DrHeader {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("DrHeader(redacted)")
-    }
-}
-
-impl core::fmt::Debug for Envelope {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("Envelope(redacted)")
-    }
-}
-
-impl core::fmt::Debug for Payload {
-    /// Gibt nur die Variante preis, niemals Inhalte — `Payload::Text` traegt
-    /// den Klartext einer Nachricht (`CLAUDE.md`: keine Klartexte in Logs).
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Payload::tag({})(redacted)", self.variant_tag())
     }
 }
 

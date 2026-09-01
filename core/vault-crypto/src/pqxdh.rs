@@ -149,18 +149,30 @@ pub fn derive_sk(parts: &DhParts, k_pq: &[u8]) -> Result<RootKey, CryptoError> {
     if k_pq.len() != ML_KEM_SHARED_SECRET_LEN {
         return Err(CryptoError::InvalidKeyLength);
     }
-    let mut ikm = Vec::with_capacity(X25519_LEN.saturating_mul(4).saturating_add(k_pq.len()));
-    ikm.extend_from_slice(&parts.dh1);
-    ikm.extend_from_slice(&parts.dh2);
-    ikm.extend_from_slice(&parts.dh3);
+    // §1 definiert `‖` als „Byte-Konkatenation **mit Laengenpraefix**" und
+    // „Kein Feld ohne explizite Laenge". Die frueher hier verwendete rohe
+    // Konkatenation war eine Abweichung davon (Befund N-5): kryptografisch
+    // bei festen Laengen unbedenklich, aber ein zweiter Implementierer, der
+    // die Spec woertlich liest, erzeugt ein anderes `SK` — Interop-Bruch.
+    // Praefix: u32 little-endian, wie §1 fuer Multi-Byte-Felder festlegt.
+    let mut ikm = Vec::with_capacity(
+        X25519_LEN
+            .saturating_add(4)
+            .saturating_mul(4)
+            .saturating_add(k_pq.len())
+            .saturating_add(4),
+    );
+    push_field(&mut ikm, &parts.dh1)?;
+    push_field(&mut ikm, &parts.dh2)?;
+    push_field(&mut ikm, &parts.dh3)?;
     let info: &[u8] = match parts.dh4 {
         Some(ref d) => {
-            ikm.extend_from_slice(d);
+            push_field(&mut ikm, d)?;
             b"vault-pqxdh-sk-opk"
         }
         None => INFO_SK,
     };
-    ikm.extend_from_slice(k_pq);
+    push_field(&mut ikm, k_pq)?;
 
     let mut okm = [0u8; KEY_LEN];
     let result = hkdf_sha256(None, &ikm, info, &mut okm);
@@ -170,6 +182,14 @@ pub fn derive_sk(parts: &DhParts, k_pq: &[u8]) -> Result<RootKey, CryptoError> {
     let sk = RootKey::from_bytes(okm);
     okm.zeroize();
     Ok(sk)
+}
+
+/// Hängt ein Feld längenpräfigiert an (`‖` nach `spec/protokoll-spec.md` §1).
+fn push_field(ikm: &mut Vec<u8>, field: &[u8]) -> Result<(), CryptoError> {
+    let len = u32::try_from(field.len()).map_err(|_| CryptoError::InvalidKeyLength)?;
+    ikm.extend_from_slice(&len.to_le_bytes());
+    ikm.extend_from_slice(field);
+    Ok(())
 }
 
 /// `ML-KEM.Encaps(pqspk_ek)` — **nicht implementiert**.
@@ -326,6 +346,38 @@ mod tests {
         let parts =
             initiator_dh_values(&ek, &sk(2), &sk(3).public(), &sk(4).public(), None).unwrap();
         assert_eq!(format!("{parts:?}"), "DhParts(redacted)");
+    }
+
+    /// Regression zu Befund N-5: `SK` muss ueber die **laengenpraefigierte**
+    /// Konkatenation aus §1 gebildet werden, nicht ueber die rohe.
+    ///
+    /// Der Test baut die alte, rohe Variante nach und verlangt, dass sie ein
+    /// **anderes** Ergebnis liefert. Ohne den Fix wird er rot.
+    #[test]
+    fn sk_ist_laengenpraefigiert_nicht_roh_konkateniert() {
+        let ek = sk(1);
+        let ik_i = sk(2);
+        let spk_r = sk(3);
+        let ik_r = sk(4);
+        let parts = initiator_dh_values(&ek, &ik_i, &spk_r.public(), &ik_r.public(), None).unwrap();
+        let k_pq = [7u8; ML_KEM_SHARED_SECRET_LEN];
+
+        let sk_neu = derive_sk(&parts, &k_pq).unwrap();
+
+        // Nachbau der alten, rohen Konkatenation.
+        let mut roh = Vec::new();
+        roh.extend_from_slice(&parts.dh1);
+        roh.extend_from_slice(&parts.dh2);
+        roh.extend_from_slice(&parts.dh3);
+        roh.extend_from_slice(&k_pq);
+        let mut okm = [0u8; KEY_LEN];
+        hkdf_sha256(None, &roh, INFO_SK, &mut okm).unwrap();
+
+        assert_ne!(
+            sk_neu.as_bytes(),
+            &okm,
+            "SK entspricht der rohen Konkatenation — §1 verlangt Laengenpraefix"
+        );
     }
 
     #[test]

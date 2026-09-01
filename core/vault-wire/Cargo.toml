@@ -14,3 +14,4 @@ workspace = true
 # Schluesseltypen in vault-crypto.
 [dependencies]
 zeroize = { version = "1.9.0", default-features = false, features = ["zeroize_derive", "alloc"] }
+subtle = { version = "2.6.1", default-features = false }

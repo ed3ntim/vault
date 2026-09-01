@@ -92,6 +92,29 @@ for d in $ffi_deps; do
 done
 note "Dependency-Richtung vault-ffi geprueft"
 
+# --- 5. Deklarierte Sicherheits-Dependencies muessen benutzt werden --------
+# Befund M-1 des unabhaengigen Gegenlesens: `subtle` stand in Cargo.toml und
+# in dieser Allowlist, wurde aber nirgends verwendet — waehrend abgeleitete
+# PartialEq-Implementierungen private Schluessel byteweise verglichen. Das
+# Gate verbuchte damit eine unbenutzte Dependency als Compliance-Nachweis.
+# spec/engineering-setup.md §3.1 verlangt die Verwendung, nicht die
+# Deklaration.
+for manifest in "$CORE"/vault-*/Cargo.toml; do
+    crate_dir="$(dirname "$manifest")"
+    crate_name="$(basename "$crate_dir")"
+    for dep in subtle zeroize; do
+        grep -q "^$dep = " "$manifest" 2>/dev/null || continue
+        case "$dep" in
+            subtle) pattern='subtle::|ConstantTimeEq|ct_eq' ;;
+            zeroize) pattern='zeroize::|Zeroize|ZeroizeOnDrop|\.zeroize\(\)' ;;
+        esac
+        if ! grep -rqE "$pattern" "$crate_dir/src" 2>/dev/null; then
+            violation "$crate_name deklariert '$dep', verwendet es aber nirgends (§3.1)"
+        fi
+    done
+done
+note "Verwendung deklarierter Sicherheits-Dependencies geprueft"
+
 if [ "$fail" -eq 0 ]; then
     echo "G-5 OK — Schichtregel eingehalten"
 else

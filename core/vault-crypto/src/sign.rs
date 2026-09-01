@@ -13,6 +13,7 @@
 //! Invitation (§4), Geräteliste (§9.1).
 
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
+use subtle::{Choice, ConstantTimeEq};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::error::CryptoError;
@@ -111,6 +112,14 @@ impl VerifyingPublic {
         // `verify_strict` prueft zusaetzlich Torsionsanteile in `R`.
         vk.verify_strict(message, &sig)
             .map_err(|_| CryptoError::SignatureInvalid)
+    }
+}
+
+impl ConstantTimeEq for SigningPrivate {
+    /// Konstantzeitiger Vergleich (`spec/engineering-setup.md` §3.1).
+    /// `SigningPrivate` implementiert bewusst kein `PartialEq`.
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0.ct_eq(&other.0)
     }
 }
 

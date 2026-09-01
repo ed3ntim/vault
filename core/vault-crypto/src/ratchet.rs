@@ -26,7 +26,7 @@
 //! Beide Punkte sind Implementierungsentscheidungen, keine Spec-Änderungen —
 //! sie sind zur Bestätigung vorgelegt (siehe `TAGESBERICHT.md`).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 
 use crate::aead;
 use crate::dh::{DhPrivate, DhPublic, X25519_LEN};
@@ -99,6 +99,13 @@ pub struct Ratchet {
     nr: u32,
     pn: u32,
     skipped: BTreeMap<(DhPublic, u32), MessageKey>,
+    /// Einfügereihenfolge für die FIFO-Verdrängung (ADR-19, Entwurf).
+    ///
+    /// Maßgeblich ist die Reihenfolge des Einfügens, **nicht** die
+    /// Nachrichtennummer: Nach einem DH-Ratchet-Schritt beginnen die Nummern
+    /// wieder bei 0, eine Sortierung nach Nummer würde die falschen Einträge
+    /// verdrängen.
+    skipped_order: VecDeque<(DhPublic, u32)>,
 }
 
 impl Ratchet {
@@ -128,6 +135,7 @@ impl Ratchet {
             nr: 0,
             pn: 0,
             skipped: BTreeMap::new(),
+            skipped_order: VecDeque::new(),
         })
     }
 
@@ -147,6 +155,7 @@ impl Ratchet {
             nr: 0,
             pn: 0,
             skipped: BTreeMap::new(),
+            skipped_order: VecDeque::new(),
         }
     }
 
@@ -218,7 +227,9 @@ impl Ratchet {
         //    Schlüssel nicht vernichtet.
         if let Some(mk) = self.skipped.get(&(header.dh_pub, header.n)) {
             let plaintext = open_with(mk, header, ciphertext)?;
-            self.skipped.remove(&(header.dh_pub, header.n));
+            let key = (header.dh_pub, header.n);
+            self.skipped.remove(&key);
+            self.skipped_order.retain(|entry| entry != &key);
             return Ok(plaintext);
         }
 
@@ -262,9 +273,34 @@ impl Ratchet {
         self.nr = work.nr;
         self.pn = work.pn;
         for (key, value) in staged {
-            self.skipped.insert(key, value);
+            self.insert_skipped(key, value);
         }
         Ok(plaintext)
+    }
+
+    /// Legt einen übersprungenen Message Key ab und verdrängt dabei nach
+    /// FIFO, wenn der Vorrat voll ist (ADR-19, Entwurf).
+    ///
+    /// Wird ausschließlich aus dem Commit-Pfad von [`Ratchet::decrypt`]
+    /// aufgerufen, also **nach** erfolgreicher Authentifikation. Ein
+    /// eingeschleuster Frame kann damit keine Verdrängung auslösen — der
+    /// Angreifer aus Befund HOCH-2 müsste echte Nachrichten unterschlagen,
+    /// statt eigene einzuspeisen.
+    fn insert_skipped(&mut self, key: (DhPublic, u32), value: MessageKey) {
+        while self.skipped.len() >= MAX_SKIPPED_STORED {
+            match self.skipped_order.pop_front() {
+                Some(oldest) => {
+                    // Der verdrängte Message Key wird hier gelöscht
+                    // (`ZeroizeOnDrop`), statt bis zu seiner Einlösung
+                    // liegen zu bleiben.
+                    self.skipped.remove(&oldest);
+                }
+                None => break,
+            }
+        }
+        if self.skipped.insert(key, value).is_none() {
+            self.skipped_order.push_back(key);
+        }
     }
 }
 
@@ -318,9 +354,11 @@ fn skip_message_keys(
     while work.nr < until {
         let ckr = work.ckr.as_ref().ok_or(CryptoError::RatchetStateInvalid)?;
         let (next_ck, mk) = kdf::kdf_ck(ckr)?;
-        if already_stored.saturating_add(staged.len()) >= MAX_SKIPPED_STORED {
-            return Err(CryptoError::SkippedKeyLimitExceeded);
-        }
+        // Kein Abbruch mehr bei vollem Vorrat: die Verdrängung nach ADR-19
+        // passiert beim Commit in `insert_skipped`. Ein Abbruch hier war der
+        // Befund HOCH-2 — er machte die Session dauerhaft unbrauchbar.
+        // `staged` bleibt durch MAX_SKIP_PER_CHAIN oben gedeckelt.
+        let _ = already_stored;
         staged.push(((dhr, work.nr), mk));
         work.ckr = Some(next_ck);
         work.nr = work
