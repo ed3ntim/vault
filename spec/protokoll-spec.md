@@ -14,6 +14,7 @@ Diese Spezifikation ist normativ für: Invitation, Kontakt-Handshake, Verifikati
 | `X25519` | ECDH-Schlüsselaustausch |
 | `ML-KEM-768` | Post-Quantum-KEM (Kyber) |
 | `HKDF` | HKDF-SHA-256 (Extract-and-Expand) |
+| `HMAC(k, m)` | HMAC-SHA-256 (RFC 2104; §9.3, §10, §13; kein eigenes Verfahren, gleiche Hash-Basis wie `HKDF`) |
 | `H(x)` | BLAKE3-256 |
 | `AEAD(k, n, ad, pt)` | XChaCha20-Poly1305 |
 | `Sig(sk, m)` / `Vrf(pk, m, σ)` | Ed25519 |
@@ -84,7 +85,7 @@ Contact {
   dr: DoubleRatchetState
   sync_key, mesh_key
   assurance: {UNVERIFIED, CONFIRMED, VERIFIED}   // ⚪ / 🔵 / 🟢
-  disappearing_ttl            // Default gesetzt
+  disappearing_ttl            // Default der Anzeigefrist (§8.2), keine Zustellfrist
   state: ContactFSM
 }
 ```
@@ -223,11 +224,16 @@ Envelope {
 
 **Payload-Typen:**
 ```
-enum Payload {
-  Text { body, ttl }
+Payload {
+  msg_uid: 16B                                            // Nachrichten-Identität, s.u.
+  body: PayloadBody
+}
+
+enum PayloadBody {
+  Text { body, disappear_after }                          // Anzeigefrist, §8.2
   Attachment { key, size, chunk_count, manifest_hash }   // Chunks separat, XChaCha20
-  Ack { msg_id }                                          // setzt Status "delivered"
-  Receipt { msg_id, kind: DELIVERED|READ }                // READ opt-in
+  Ack { ref_uid }                                         // setzt Status "delivered"
+  Receipt { ref_uid, kind: DELIVERED|READ }               // READ opt-in
   ContactCard { ... }                                     // §5
   DeviceListUpdate { list, sig }
   SyncRecord { ... }                                      // Multi-Device (§9)
@@ -235,7 +241,33 @@ enum Payload {
   RevocationNotice { ... }                                // §11
 }
 ```
-`msg_id = H(dr_header ‖ ciphertext)` — deterministisch, kollisionsresistent, **nur innerhalb der entschlüsselten Session sichtbar** (nicht auf der Wire).
+
+### 8.1 Nachrichten-Identität und Dedup-Schlüssel
+
+Es gibt **zwei** Bezeichner mit klar getrennter Aufgabe. Sie sind nicht austauschbar.
+
+**`msg_uid`, Identität der Nachricht.** 16 B, vom Sender **einmal** bei der Komposition aus dem CSPRNG gezogen und danach unverändert über alle Zustellversuche, Neuverschlüsselungen, Zielgeräte, Transporte und Ratchet-Schritte hinweg. `msg_uid` liegt im AEAD-geschützten Klartext und erscheint **nie** auf der Wire. Jede Payload trägt genau eine `msg_uid`, auch `Ack` und `Receipt`; diese verweisen mit `ref_uid` auf die `msg_uid` der quittierten Nachricht.
+
+**`env_ref = H(dr_header ‖ ciphertext)`, Referenz auf genau ein Chiffrat.** Deterministisch, kollisionsresistent, rein lokal gebildet, nie übertragen. `env_ref` identifiziert einen **Envelope**, keine Nachricht: dieselbe Nachricht an ein anderes Zielgerät neu verschlüsselt hat eine andere `env_ref`. `env_ref` ist deshalb **kein** Dedup-Schlüssel (Befund F-2, ADR-17); ihre einzige Verwendung ist die lokale Zuordnung „welches Chiffrat liegt in der Warteschlange" (§9.2). Im Envelope-Cache (§9.3) tritt dieselbe Größe **geschlüsselt** als `env_tag` auf; ein roher Hash wird dort nicht gespeichert (ADR-21).
+
+**Dedup-Schlüssel ist `(compartment_id, contact_id, msg_uid)`.** Er ist geräteübergreifend stabil, weil `msg_uid` weder von der Verschlüsselung noch vom Zielgerät abhängt. Der Empfänger führt je Kontakt-Session einen Dedup-Store über `msg_uid`; eine bereits enthaltene `msg_uid` wird **nicht** erneut in den Verlauf, nicht in die UI und nicht in ein `SyncRecord` übernommen, wohl aber nach §9.3 quittiert. Der Store fasst [`MAX_DEDUP_UIDS`] = 2048 Einträge je Session und verdrängt bei Überlauf den Eintrag mit der ältesten Einfügereihenfolge (FIFO). Verdrängen statt Ablehnen, weil ein voller Store sonst jede weitere Nachricht der Session blockiert; dieselbe Politik gilt aus demselben Grund im Skipped-Message-Key-Store (ADR-19). Die Wiederholungsschranke in §9.2 stellt sicher, dass kein Sender länger wiederholt, als der Store zurückreicht.
+
+Der in `spec/gruppen-spec.md` (§Transcript-Hash) verwendete `msg_id = H(ct)` ist eine gruppenlokale Kettengröße und **nicht** dieser Dedup-Schlüssel; er bleibt unverändert und wird nicht auf 1:1-Sessions angewandt.
+
+`msg_uid` ist zufällig und nicht aus dem Inhalt abgeleitet: eine Ableitung aus dem Klartext erlaubte einem Angreifer, der den vermuteten Klartext kennt, dessen Existenz zu bestätigen. Der Dedup-Schlüssel exponiert damit nichts auf der Wire und schafft keine geräteübergreifende Verkettbarkeit für Dritte (A1/A2/A3 im Threat Model); verkettbar ist er ausschließlich für die beiden Sitzungsteilnehmer, denen der Klartext ohnehin vorliegt.
+
+### 8.2 Anzeigefrist und Zustellfrist
+
+**Zwei Fristen mit getrennter Aufgabe. Sie werden nie miteinander verrechnet.**
+
+**`disappear_after`, Anzeigefrist.** Wie lange eine zugestellte Nachricht auf den Geräten beider Seiten sichtbar bleibt. Nutzerseitig einstellbar, Default je Kontakt aus `disappearing_ttl` (§3). Die Frist läuft **beim Empfänger ab erfolgreicher Entschlüsselung** (§9.3 Regel 1) und **beim Sender ab dem Eintreffen des `Ack`**. Sie läuft nicht, solange eine Nachricht in der Ausgangswarteschlange liegt, und sie beendet keinen Zustellversuch.
+
+**`queue_ttl`, Zustellfrist.** Wie lange der Sender einen unzustellbaren Envelope wiederholt: **7 Tage**, einheitlich für **alle** Payload-Typen, nicht konfigurierbar, unabhängig von `disappear_after` (§9.2, §9.4).
+
+Warum getrennt:
+- Ein kurzer Selbstlösch-Default würde sonst die Zustellung abbrechen, obwohl der Empfänger nur offline war. Das erzeugte genau die Falschmeldung, die §9.4 und die Zusage zu G8 (`threat-model.md`) ausschließen.
+- Eine an `disappear_after` gekoppelte Zustellfrist wäre **beobachtbar**: der Wiederholungsverkehr endete je nach Nutzereinstellung früher oder später und verriete die Einstellung an einen Netzbeobachter (A1/A2). `queue_ttl` ist deshalb Teil des einheitlichen, nicht konfigurierbaren Netzprofils (§2.9 Gesamtkonzept, TR-5).
+- Erreicht ein Envelope die Zustellfrist, wird er als `EXPIRED` samt Nutzlast gelöscht (§9.2). Eine nie zugestellte Nachricht mit kurzer Anzeigefrist verschwindet damit ohnehin, nur ehrlich sichtbar als „nicht zugestellt" statt still.
 
 ---
 
@@ -260,6 +292,14 @@ if kein Ack:
 ```
 Die **deterministische Zielreihenfolge** sorgt dafür, dass normalerweise **dasselbe Empfängergerät** die Nachricht erhält und damit die Ratchet der Gegenseite vorantreibt → Nebenläufigkeits-Konflikte selten.
 
+**Wiederholung.** Die Ausgangswarteschlange hält den **fertigen Envelope**. Ein Zustellversuch an dasselbe Zielgerät wiederholt genau diese Bytes; neu verschlüsselt wird ausschließlich beim Wechsel des Zielgeräts. `msg_uid` (§8.1) bleibt in beiden Fällen gleich, `env_ref` ändert sich bei Neuverschlüsselung.
+
+**Abbruchschranke (Befund F-3).** Die Wiederholung endet, sobald eines eintritt:
+1. Ein `Ack` mit `ref_uid == msg_uid` trifft ein → `DELIVERED`.
+2. Die `queue_ttl` läuft ab → `EXPIRED` (§9.4). Sie beträgt **7 Tage**, gilt für **jeden** Payload-Typ gleich und wird beim Einstellen in die Warteschlange gesetzt. Die Anzeigefrist `disappear_after` einer `Text`-Payload verkürzt sie **nicht** (§8.2).
+
+Ohne Schranke 2 wiederholt der Sender unbegrenzt, sobald der Envelope-Cache der Gegenseite (§9.3) den Eintrag verdrängt hat; genau das ist die Endlosschleife aus Befund F-3. 7 Tage entsprechen ~168 Sync-Fenstern (§10, `INTERVAL = 3600 s`); eine längere Frist erhöht nur die Zeit, in der ein unzustellbarer Envelope auf dem Gerät liegt. Mit `EXPIRED` werden Envelope und Nutzlast gelöscht, `msg_uid` bleibt bis zum Ende des Dedup-Fensters erhalten.
+
 ### 9.3 Empfang & Geräte-Rollen (Primärgerät-Modell, GATE-2 / ADR-17)
 
 Der Double-Ratchet-Zustand einer Kontakt-Session existiert **nur auf dem Primärgerät**. Zweitgeräte halten keinen eigenen Ratchet-Zustand für Kontakte.
@@ -269,6 +309,23 @@ Der Double-Ratchet-Zustand einer Kontakt-Session existiert **nur auf dem Primär
 - **Senden vom Zweitgerät:** als Send-Proxy über das Primärgerät. Ist das Primärgerät nicht erreichbar, zeigt das Zweitgerät ehrlich „nicht sendefähig" statt eine Ratchet-Operation zu simulieren.
 - **Rollenwechsel** (Primärgerät verloren/gewechselt) ist ein eigener, noch ungetesteter Ablauf → Restrisiko **R-11**, Spike vor Phase 2.
 
+**Envelope-Cache und Re-Ack (Befund F-3).** Ein Ack kann verlorengehen. Stellt der Sender denselben Envelope erneut zu, kann der Empfänger ihn **nicht mehr entschlüsseln**, weil der Message Key verbraucht ist. Damit das Paar nicht in eine Endlosschleife läuft, führt das **Primärgerät** je Kontakt-Session einen Envelope-Cache:
+```
+k_env    = HKDF(DR_X.RK_initial, "vault-envelope-cache")   // einmal je Session
+env_tag  = HMAC(k_env, dr_header ‖ ciphertext)[0..16]      // lokal, nie auf der Wire
+Cache:     env_tag → msg_uid                               // je Session, keine Klartexte
+```
+Regeln, verbindlich:
+1. **Nach erfolgreicher Entschlüsselung:** `env_tag → msg_uid` eintragen, `msg_uid` in den Dedup-Store (§8.1) aufnehmen, `Ack { ref_uid = msg_uid }` senden.
+2. **Entschlüsselung schlägt fehl und `env_tag` ist im Cache:** Der Envelope gilt als bereits empfangen. Das Primärgerät antwortet mit einem **frisch verschlüsselten** `Ack { ref_uid = msg_uid }` aus dem aktuellen Sendezustand. Kein erneuter Entschlüsselungsversuch, kein Verlaufseintrag, kein `Receipt`, kein `SyncRecord`. Ein gespeichertes altes Ack-Chiffrat wird **nie** erneut gesendet (Replay, A7/G1).
+3. **Entschlüsselung schlägt fehl und `env_tag` ist nicht im Cache:** verwerfen, ohne jede Antwort auf der Wire. Es wird kein Fehler und kein Statuscode zurückgegeben; eine unterscheidbare Antwort wäre ein Orakel für A7 und A4.
+4. **Ratenbegrenzung:** höchstens [`MAX_REACK_PER_ENTRY`] = 5 Re-Acks je Cache-Eintrag und Stunde; darüber hinausgehende Wiederholungen werden nach Regel 3 behandelt. Re-Acks unterliegen demselben Ack-Zeitpunkt und Jitter wie reguläre Acks (GATE-3), damit ein autorisierter Kontakt sie nicht als feineres Präsenzsignal nutzt (A4/G3).
+5. **Schranke:** [`MAX_ENV_CACHE`] = 2048 Einträge je Session, Verdrängung des ältesten Eintrags nach Einfügereihenfolge (FIFO), damit ein voller Cache die Session nicht blockiert; gleiche Politik wie im Skipped-Message-Key-Store (ADR-19). Ein verdrängter Eintrag fällt unter Regel 3; die Abbruchschranke in §9.2 beendet die Wiederholung senderseitig.
+6. Der Cache enthält **kein** Schlüsselmaterial und keinen Klartext. `k_env` und der Cache werden bei Revocation (§11) mit der Session gelöscht (`zeroize`). Zweitgeräte führen keinen Envelope-Cache; sie reichen opake Bytes weiter und quittieren nie.
+7. **Persistenz:** Cache und `k_env` liegen in der verschlüsselten Session-Ablage (`vault-storage`, SQLCipher) und überleben Neustarts; sonst fiele nach jedem App-Start jeder Wiederholungsversuch unter Regel 3 und eine gelesene Nachricht liefe beim Sender in `EXPIRED` (§9.4). Der Cache wird **nicht** an Zweitgeräte repliziert und nie exportiert.
+
+`env_tag` ist geschlüsselt statt roh gehasht: ein roher Hash über den Envelope wäre für jeden berechenbar, der die Envelope-Bytes kennt, und erlaubte den Abgleich gegen einen erbeuteten Cache. Mit `k_env` ist der Cache ohne Sitzungsgeheimnis nicht prüfbar.
+
 **Begründung:** Der Double Ratchet ist ein Zwei-Parteien-Protokoll; sein Sendezustand ist nicht über mehrere Geräte replizierbar. Die frühere Fassung (paarweiser Multi-Device-Ratchet) verlor strukturell Nachrichten (Spike S2: 4,15 % untere Schranke) und ist verworfen.
 
 ### 9.4 Zustellstatus-FSM
@@ -276,8 +333,10 @@ Der Double-Ratchet-Zustand einer Kontakt-Session existiert **nur auf dem Primär
 QUEUED ──attempt──▶ ATTEMPTING ──Ack──▶ DELIVERED ──Receipt──▶ READ
    ▲                    │
    └── kein reachable ──┴─▶ WAITING ──(Sync-Fenster/Erreichbarkeit)──▶ ATTEMPTING
+                            │
+                            └── queue_ttl abgelaufen ───────▶ EXPIRED (terminal)
 ```
-UI zeigt `WAITING` als „wartet auf Erreichbarkeit" — nie „zugestellt".
+UI zeigt `WAITING` als „wartet auf Erreichbarkeit" — nie „zugestellt". `EXPIRED` zeigt die UI als „nicht zugestellt"; der Zustand ist terminal, es folgt kein weiterer Versuch. `DELIVERED` setzt ausschließlich das Primärgerät nach einem echten E2E-`Ack` (§9.3), auch dann, wenn das Ack ein Re-Ack nach §9.3 Regel 2 ist: quittiert wird eine nachweislich einmal entschlüsselte Nachricht. Der Übergang nach `EXPIRED` hängt allein an der einheitlichen Zustellfrist `queue_ttl`, nie an der Anzeigefrist `disappear_after` (§8.2).
 
 ---
 

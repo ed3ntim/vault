@@ -40,12 +40,15 @@ Die Lesart ist **entscheidungsrelevant** — dieselben Rohdaten können unter A1
 bestehen und unter A2 reißen. `s5-eval verdict` weist deshalb beide Kriterien
 getrennt aus (K-A1 und K-A2) und entscheidet die Frage nicht.
 
-**Zu klären, bevor die erste Messreihe startet.** Die Auflösung gehört in den
-ADR zu GATE-3 (`spikes/S5/adr-entwurf-GATE-3.md`, Feld PROFIL-0), nicht in
-das Auswertewerkzeug. Bis dahin gilt: Beide Werte werden berichtet.
+**Entschieden am 2026-09-02: Lesart A1** (`ops/autopilot/ENTSCHEIDUNGEN.md`,
+Eintrag A4; `spec/phase0-spikeplan.md` §2 (S5)). Kriterientragend ist
+(R3 − R0) < 8 %/24 h, dazu (R4 − R3) < 2 %/24 h; (R4 − R0) wird weiterhin
+berichtet, trägt aber kein Kriterium. `s5-eval verdict` weist unverändert beide
+aus. Der ADR zu GATE-3 übernimmt diese Festlegung in Feld PROFIL-0.
 
-Zweite, kleinere Unklarheit: Die Spec legt nicht fest, mit **wie vielen
-Kontakten und Kompartimenten** gemessen wird. Der Verbrauch skaliert damit
+Zweite, kleinere Unklarheit, ebenfalls am 2026-09-02 entschieden (§4.6): Die
+Spec legte nicht fest, mit **wie vielen Kontakten und Kompartimenten** gemessen
+wird. Der Verbrauch skaliert damit
 (Sync-Fenster pro Kontaktpaar nach `spec/protokoll-spec.md` §10, Beacon-Tokens
 pro Kontakt nach §13). §4.6 dieses Protokolls schlägt ein festes Referenzprofil
 vor; es ist eine **Annahme**, keine Spec-Vorgabe, und mit zu bestätigen.
@@ -138,21 +141,27 @@ Reichweite sind**. Ohne feste Vorgabe ist R4 nicht reproduzierbar.
 - Umgebungsfunk (fremde BLE-Geräte) grob protokollieren: Büro werktags ≠
   Wohnung nachts. Idealerweise alle Läufe am selben Ort.
 
-### 4.6 Referenzprofil der App (Annahme — zu bestätigen)
+### 4.6 Referenzprofil der App (festgelegt 2026-09-02)
 Damit Läufe vergleichbar sind, ist der App-Zustand vor jedem Lauf identisch
 herzustellen (Snapshot zurückspielen):
 
-| Größe | Vorschlag | Begründung |
+**P-REF, kriterientragend:**
+
+| Größe | Festlegung | Begründung |
 |---|---|---|
-| Kompartimente | 2 | Richtwert 2–5 aus `gesamtkonzept.md` §2.2, unteres Ende |
-| Kontakte gesamt | 5 | Sync-Fenster und Beacon-Tokens skalieren damit |
+| Kompartimente | 5 | oberes Ende des Richtwerts 2–5 aus `gesamtkonzept.md` §2.2; jedes Kompartiment ist ein eigener Onion-Service mit eigenem Descriptor-Republish |
+| Kontakte gesamt | 5 | Sync-Fenster und Beacon-Tokens skalieren damit; mindestens einer je Kompartiment |
 | davon dauerhaft erreichbar | 1 | erzeugt echte Verbindungsversuche statt nur Warteschlange |
 | offene Warteschlange | 0 Nachrichten | „Leerlauf" |
 | Gruppen | 0 | Gruppen sind Phase 4, nicht Gegenstand von S5 |
 
-Diese Zahlen stehen **nicht** in der Spec. Sie sind eine Setzung, damit die
-Messung reproduzierbar ist, und müssen mitberichtet werden — ein Ergebnis gilt
-nur für dieses Profil.
+**P-SKAL, berichtspflichtig, kein Kriterium:** R1 und R4 je einmal 24 h mit
+20 Kontakten in denselben 5 Kompartimenten. Liefert die Steigung je Kontakt.
+Kosten: zwei zusätzliche Läufe je Gerätemodell und ein zweiter App-Snapshot.
+
+Die Zahlen sind eine Setzung des Entscheiders (`ops/autopilot/ENTSCHEIDUNGEN.md`,
+Eintrag A4), keine Ableitung aus Messdaten. Sie sind mitzuberichten: ein Ergebnis
+gilt nur für das Profil, unter dem es entstand.
 
 ### 4.7 Temperatur
 - Umgebungstemperatur je Lauf notieren (`ambient_temp_c`), Ziel 20–25 °C,

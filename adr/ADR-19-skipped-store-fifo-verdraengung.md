@@ -1,7 +1,10 @@
 # ADR-19: FIFO-Verdrängung im Skipped-Message-Key-Store
 
-- **Status:** **ENTWURF — wartet auf Freigabe.**
-- **Datum:** 2026-07-26
+- **Status:** **akzeptiert** (Freigabe 2026-09-02 durch den `business-analyst`
+  im Rahmen seiner Befugnis für Sicherheits-Trade-offs ohne Berührung von
+  Priorität 1 oder 2; Begründung unten unter „Freigabe", Entscheidungslog
+  `ops/autopilot/ENTSCHEIDUNGEN.md`. Entwurfsstand vom 2026-07-26.)
+- **Datum:** 2026-07-26, freigegeben 2026-09-02
 - **Betrifft:** `core/vault-crypto` (`ratchet`), `spec/protokoll-spec.md` §8,
   `spec/phase0-spikeplan.md` §2 (S2), `spec/threat-model.md` §4/A7;
   ADR-05, ADR-17
@@ -139,6 +142,27 @@ Neustart.
 1. **TTL zusätzlich zur FIFO-Verdrängung?** Ohne Zeitquelle in
    `vault-crypto` müsste die aufrufende Schicht sie durchreichen. Lohnt der
    Aufwand, wenn FIFO das Horten bereits beendet?
+   → **Entschieden 2026-09-02: nein, nicht im MVP.** `vault-crypto` darf nach
+   der Schichtregel keine Uhr benutzen, und FIFO beendet das Horten bereits.
+   Eine TTL in der Zustellschicht bleibt als spätere Option offen und ist kein
+   Freigabehindernis.
 2. **Soll die Verdrängung beobachtbar sein?** Ein Zähler „wie viele Keys
-   wurden verdrängt" wäre ein Indikator für einen laufenden Angriff — aber
+   wurden verdrängt" wäre ein Indikator für einen laufenden Angriff, aber
    auch ein Metadatum, das irgendwo landen müsste.
+   → **Entschieden 2026-09-02: kein persistierter Zähler, keine Logausgabe.**
+   Ein prozesslokaler Zähler ist ausschließlich in Tests zulässig. Begründung:
+   ein persistiertes Angriffsindiz ist ein Metadatum über den Nutzer, und
+   `CLAUDE.md` verbietet Metadaten dieser Art im Log; Priorität 1 schlägt den
+   diagnostischen Nutzen.
+
+## Freigabe (2026-09-02)
+
+Geprüft gegen den Prioritätsstack: Priorität 1 wird nicht berührt, sondern
+leicht gestärkt (alte Message Keys rotieren statt zu lagern); Priorität 2 ist
+nicht betroffen, der Store ist rein lokal. Es kehrt kein Ansatz aus Anhang A
+zurück, es entsteht kein eigenes Kryptoprimitiv, kein Netzverkehr, keine Bindung
+an Dritte. Die Datengrundlage (Befund HOCH-2, reproduzierter Ablauf im
+Kontextabschnitt) liegt vor; die beiden offenen Fragen sind oben entschieden und
+waren ohnehin keine Voraussetzung der Kernentscheidung. Damit ist die Politik
+zitierfähig: `spec/protokoll-spec.md` §8.1 und §9.3 verweisen auf sie als
+Verdrängungspolitik, begründen sie dort aber zusätzlich eigenständig.

@@ -47,8 +47,34 @@ Parallelisierbar auf 4 Personen. Kritischer Pfad: **S1 → S5 → S2**.
 
 **Erfolgskriterien:**
 - Client-Auth funktional auf **allen** Zielplattformen
-- Onion-Aufbau < 20 s (p50), < 60 s (p95)
+- **`T_conn` (Client verbunden)** < 20 s (p50), < 60 s (p95)
+- **`T_pub` (Dienst erreichbar)** wird je Plattform gemessen und berichtet; die Schranke setzt GATE-1 auf Basis dieser Daten, sie wird hier nicht vorweggenommen
 - Nicht-autorisierter Descriptor-Abruf schlägt in 100 % der Versuche fehl
+
+**Messdefinition „Onion-Aufbau" (verbindlich, Entscheidung 2026-09-02):** Die
+Formulierung „Onion-Aufbau" ist in zwei getrennte, beobachtbare Größen
+aufgelöst. Beide werden gemessen, das Latenzkriterium trägt `T_conn`.
+
+| Größe | Start (beobachtbar) | Stopp (beobachtbar) |
+|---|---|---|
+| `T_pub` | Aufruf, der den Onion-Service mit `authorized_clients` startet (C-tor: `ADD_ONION` über den Control-Port; Arti: Start des Onion-Service-Handles) | erster **erfolgreicher** Verbindungsabschluss eines autorisierten Testclients aus einer **getrennten** Tor-Instanz, also der Stopp-Punkt von `T_conn` |
+| `T_conn` | Absetzen des SOCKS-`CONNECT` auf die Onion-Adresse durch einen Client, dessen Tor bereits auf Bootstrap 100 % steht | SOCKS-Erfolg **und** erste Anwendungsbytes vom Dienst angenommen |
+
+Randbedingungen, ohne die die Zahlen nicht vergleichbar sind:
+- Der Bootstrap des Clients zählt **nicht** zu `T_conn`; er wird getrennt
+  protokolliert.
+- Der Descriptor-Cache des Clients ist vor jedem `T_conn`-Versuch für diese
+  Adresse geleert. Warme Caches messen den Cache, nicht den Aufbau.
+- Selbstauskünfte des lokalen Stacks (`HS_DESC UPLOADED` o. ä.) werden
+  mitgeschrieben, tragen aber kein Kriterium: `T_pub` endet erst, wenn ein
+  **fremder** Client tatsächlich verbindet.
+- Abbruch nach 180 s zählt als Fehlversuch und geht als Wert oberhalb der
+  Schranke in die Verteilung ein; Fehlversuche werden nicht verworfen.
+- n ≥ 100 Verbindungsversuche je Plattformpaar, über ≥ 24 h verteilt, sonst
+  ist p95 nicht belastbar.
+- Das Messwerkzeug protokolliert Zeitstempel und Lauf-ID, **nie** Onion-Adressen
+  oder Credentials (`CLAUDE.md`, Logregel), und erzeugt keinen Verkehr außerhalb
+  von Tor.
 
 **Fallback-Kaskade:** Arti → C-tor sandboxed → *(Notfall)* Start ohne Client-Auth ist **kein** akzeptabler Fallback; stattdessen Projektstart verschieben.
 
@@ -91,9 +117,32 @@ Parallelisierbar auf 4 Personen. Kritischer Pfad: **S1 → S5 → S2**.
 3. Vergleich gegen Baseline (Gerät idle) und gegen Referenz-Messenger
 
 **Erfolgskriterien:**
-- Zusatzverbrauch < 8 %/24 h im Leerlauf-Betrieb
-- BLE-Beacons < 2 %/24 h zusätzlich
+- Zusatzverbrauch des Netzprofils ohne Mesh **(R3 − R0) < 8 %/24 h** im
+  Leerlauf-Betrieb (kriterientragend, Lesart A1 in `spikes/S5/MESSPROTOKOLL.md` §2)
+- BLE-Beacons **(R4 − R3) < 2 %/24 h** zusätzlich; Gesamtbudget mit Mesh damit
+  ≤ 10 %/24 h
+- (R4 − R0) wird berichtet, trägt aber kein Kriterium
 - Kein Thermal-Throttling
+
+**Bezugsgröße und Messprofil (verbindlich, Entscheidung 2026-09-02):**
+- Mesh ist Phase 4 und pro Kontakt schaltbar (`gesamtkonzept.md` §2.8). Der
+  Tor-Pfad muss die 8 % deshalb **allein** einhalten; „zusätzlich" im
+  BLE-Kriterium ist additiv zu lesen.
+- **Referenzprofil P-REF (kriterientragend):** 5 Kompartimente (oberes Ende des
+  Richtwerts aus `gesamtkonzept.md` §2.2), 5 Kontakte, je Kompartiment
+  mindestens einer, davon 1 dauerhaft erreichbar, 0 Nachrichten in der
+  Warteschlange, 0 Gruppen. Gemessen wird am oberen Ende des Richtwerts, weil
+  sonst genau die Nutzer aus dem Kriterium fallen, die am stärksten
+  kompartimentieren.
+- **Skalierungslauf P-SKAL (berichtspflichtig, nicht kriterientragend):** R1 und
+  R4 je einmal 24 h mit 20 Kontakten in denselben 5 Kompartimenten, um die
+  Steigung je Kontakt zu beziffern (Sync-Fenster §10, Beacon-Tokens §13).
+  Bricht die Extrapolation auf P-SKAL die 8 %, legt GATE-3 die Parameter oder
+  eine dokumentierte Kontaktobergrenze fest.
+- Jedes Ergebnis gilt nur für das mitberichtete Profil.
+- Die Fallback-Kaskade darf **nicht** am Traffic-Shaping ansetzen, ohne dass
+  GATE-3 die Änderung als ADR mit Threat-Model-Abschnitt festhält: Shaping trägt
+  G2/G3 (`threat-model.md` §4).
 
 **Fallback-Kaskade:** Shaping-Budget reduzieren → Beacon-Intervall auf 60–120 s → adaptives Verhalten bei Akkustand < 20 % (**Achtung:** darf kein unterscheidbares Netzprofil erzeugen — Anpassung nur bei Mesh, nicht beim Tor-Profil).
 

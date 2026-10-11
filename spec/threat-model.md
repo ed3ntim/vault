@@ -121,7 +121,7 @@ Legende Restrisiko: **○** vernachlässigbar · **◐** gemindert, benannt · *
 |---|---|---|---|
 | G1 | Liest alle gemeinsamen Nachrichten | Kryptografisch unlösbar. Begrenzung: selbstlöschende Nachrichten als **Default** | ● |
 | G2 | Deckt Teilgraph auf | **Kompartimentierung** — offenbart nur sein Kompartiment, nicht das Gesamtnetz | ◐ |
-| G3 | Präsenz-Probing als autorisierter Kontakt | Multi-Device: nur „mindestens ein Gerät erreichbar"; gestreute Publikation; sofortige Einzel-Revocation | ◐ |
+| G3 | Präsenz-Probing als autorisierter Kontakt | Multi-Device: nur „mindestens ein Gerät erreichbar"; gestreute Publikation; sofortige Einzel-Revocation. Auch das Re-Ack (`protokoll-spec.md` §9.3 Regel 2, ADR-21) ist ein Lebenszeichen; begrenzt durch 5 Re-Acks je Cache-Eintrag und Stunde sowie denselben Ack-Jitter wie reguläre Acks | ◐ |
 | G7 | Physisches Tracking über Mesh-Beacons | Mesh-Sichtbarkeit **pro Kontakt schaltbar**; Revocation löscht `mesh_key` → Token nicht mehr berechenbar | ◐ |
 | G6 | Gruppenmitgliedschaft und -timing | Inhärent an der Mitgliedschaft. Minimierung: Pairwise-Fanout-Modus ohne Gruppen-Metadatenpunkt | ● |
 | G1 | Content-Equivocation in Gruppen | Transcript-Hash-Kette + Gossip → Divergenz wird gemeldet | ◐ |

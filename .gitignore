@@ -12,3 +12,6 @@ app/build/
 app/.dart_tool/
 spikes/**/target/
 *.log
+
+# Autopilot-Logs (gross, nicht versionieren)
+ops/autopilot/logs/
